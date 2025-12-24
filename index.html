@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Jumpman64 — Fetch & Run Games</title>
+<title>Jumpman64</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 :root{
@@ -316,6 +316,8 @@ const highlightSection = document.getElementById("highlightSection");
 const search = document.getElementById("search");
 const suggestions = document.getElementById("suggestions");
 const streakEl = document.getElementById("streak");
+const weatherEmoji = document.getElementById("weatherEmoji");
+const weatherText = document.getElementById("weatherText");
 
 const player = document.getElementById("player");
 const playerTitle = document.getElementById("playerTitle");
@@ -595,6 +597,29 @@ if (streakData.lastLogin !== todayStr) {
   localStorage.setItem("streakData", JSON.stringify(streakData));
 }
 streakEl.textContent = `Streak: 🔥 ${streakData.count}`;
+
+/* ===================== WEATHER ===================== */
+function updateWeather(lat = 43.4426, lon = -71.2776) {
+  fetch(`https://api.weather.gov/points/${lat},${lon}`)
+    .then(res => res.json())
+    .then(data => fetch(data.properties.forecast))
+    .then(res => res.json())
+    .then(fore => {
+      const f = fore.properties.periods[0];
+      weatherText.textContent = `${f.temperature}°${f.temperatureUnit} — ${f.shortForecast}`;
+      let emoji = "☁️";
+      if (/sunny/i.test(f.shortForecast)) emoji = "☀️";
+      else if (/rain/i.test(f.shortForecast)) emoji = "🌧️";
+      else if (/snow/i.test(f.shortForecast)) emoji = "❄️";
+      else if (/storm|thunder/i.test(f.shortForecast)) emoji = "⛈️";
+      else if (/clear/i.test(f.shortForecast)) emoji = "🌞";
+      weatherEmoji.textContent = emoji;
+    })
+    .catch(err => console.error("Failed to load weather", err));
+}
+
+updateWeather();
+setInterval(updateWeather, 300000); // update every 5 min
 </script>
 </body>
 </html>
