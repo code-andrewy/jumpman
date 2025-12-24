@@ -375,7 +375,16 @@ const streakEl = document.getElementById("streak");
 const player = document.getElementById("player");
 const playerTitle = document.getElementById("playerTitle");
 const backBtn = document.getElementById("backBtn");
-const gameContainer = document.getElementById("gameContainer");
+
+// Create a container inside player for the fetched HTML
+let gameContainer = document.getElementById("gameContainer");
+if (!gameContainer) {
+  gameContainer = document.createElement("div");
+  gameContainer.id = "gameContainer";
+  gameContainer.style.flex = "1";
+  gameContainer.style.overflow = "auto";
+  player.appendChild(gameContainer);
+}
 
 /* ===================== STATE ===================== */
 let allGames = [];
@@ -397,7 +406,7 @@ function openGame(name, url) {
   lastPlayed = name;
   player.style.display = "flex";
   playerTitle.textContent = name;
-  gameContainer.innerHTML = `<p>Loading game...</p>`;
+  gameContainer.innerHTML = `<p style="text-align:center;padding:20px;">Loading game...</p>`;
 
   // Fetch HTML from GitHub raw URL
   fetch(url)
@@ -405,7 +414,7 @@ function openGame(name, url) {
     .then(html => {
       gameContainer.innerHTML = html;
 
-      // Execute inline scripts
+      // Execute inline scripts in fetched HTML
       const scripts = gameContainer.querySelectorAll("script");
       scripts.forEach(oldScript => {
         const newScript = document.createElement("script");
@@ -416,13 +425,14 @@ function openGame(name, url) {
       });
     })
     .catch(err => {
-      gameContainer.innerHTML = `<p style="color:red;">Failed to load game</p>`;
+      gameContainer.innerHTML = `<p style="color:red;text-align:center;">Failed to load game</p>`;
       console.error(err);
     });
 
   renderContinue();
 }
 
+// BACK BUTTON FUNCTIONALITY
 backBtn.onclick = () => {
   gameContainer.innerHTML = "";
   player.style.display = "none";
@@ -607,7 +617,7 @@ function renderContinue() {
 /* ===================== SEARCH ===================== */
 function showNoResults() {
   gameList.innerHTML = `
-    <div style="text-align:center;padding:20px;">
+    <div class="no-results">
       <h2>⚠️ No results found</h2>
     </div>
   `;
