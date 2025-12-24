@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jumpman64</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ------------------- GENERAL ------------------- */
+body {
+background: #0b0b0b;
+color: #fff;
+font-family: "Segoe UI", Arial, sans-serif;
+margin: 0;
+padding: 0;
+overflow-x: hidden;
+scroll-behavior: smooth;
+}
+
+/* ------------------- HEADER ------------------- */
+header {
+background: rgba(20, 20, 20, 0.4);
+padding: 18px 25px;
+display: flex;
+justify-content: center;
+align-items: center;
+position: sticky;
+top: 0;
+z-index: 50;
+gap: 20px;
+backdrop-filter: blur(16px) saturate(180%);
+border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+transition: all 0.3s ease;
+}
+
+header:hover {
+background: rgba(30, 30, 30, 0.55);
+transform: translateY(-2px);
+}
+
+/* ------------------- SEARCH ------------------- */
+#search {
+padding: 14px 16px;
+width: 300px;
+border-radius: 14px;
+border: 1px solid rgba(255,255,255,0.2);
+outline: none;
+background: rgba(255, 255, 255, 0.05);
+color: white;
+font-size: 1rem;
+box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
+backdrop-filter: blur(12px) saturate(150%);
+transition: all 0.3s ease;
+}
+
+#search:focus {
+width: 360px;
+background: rgba(255, 255, 255, 0.1);
+border-color: rgba(255,255,255,0.3);
+transform: scale(1.02);
+}
+
+/* ------------------- DROPDOWN ------------------- */
+.suggestions {
+position: absolute;
+background: rgba(25, 25, 25, 0.7);
+backdrop-filter: blur(12px);
+width: 300px;
+border-radius: 14px;
+margin-top: 5px;
+display: none;
+z-index: 100;
+opacity: 0;
+transform: translateY(-15px);
+transition: all 0.3s ease;
+}
+
+.suggestions.show {
+display: block;
+opacity: 1;
+transform: translateY(0);
+}
+
+.suggestions div {
+padding: 14px;
+cursor: pointer;
+transition: background 0.2s, transform 0.2s;
+}
+
+.suggestions div:hover {
+background: rgba(50, 50, 50, 0.6);
+transform: scale(1.03);
+border-radius: 12px;
+}
+
+/* ------------------- SECTIONS ------------------- */
+section {
+display: flex;
+flex-direction: column;
+align-items: center;
+margin: 25px;
+opacity: 0;
+transform: translateY(20px);
+animation: fadeInUp 0.7s forwards;
+}
+
+section h2 {
+margin-bottom: 15px;
+font-size: 1.8rem;
+letter-spacing: 1px;
+}
+
+#highlightList, #gameList, #favList, #continueList {
+display: flex;
+flex-wrap: wrap;
+justify-content: center;
+gap: 25px;
+width: 100%;
+max-width: 1400px;
+}
+
+/* ------------------- GAME CARDS ------------------- */
+.game-card {
+position: relative;
+background: rgba(255,255,255,0.05);
+border-radius: 20px;
+padding: 20px;
+text-align: center;
+width: 220px;
+display: flex;
+flex-direction: column;
+align-items: center;
+transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s ease, background 0.35s ease;
+opacity: 0;
+animation: fadeInCard 0.6s forwards;
+border: 1px solid rgba(255, 255, 255, 0.2);
+box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+cursor: pointer;
+}
+
+.game-card:hover {
+transform: scale(1.07) translateY(-5px);
+background: rgba(255,255,255,0.08);
+box-shadow: 0 14px 40px rgba(0,0,0,0.5);
+}
+
+/* ------------------- BOOKMARK ICON ------------------- */
+.bookmark-icon {
+position: absolute;
+top: 10px;
+left: 10px;
+z-index: 5;
+background: rgba(0,0,0,0.4);
+padding: 6px 10px;
+border-radius: 12px;
+border: 1px solid rgba(255,255,255,0.25);
+backdrop-filter: blur(6px);
+transition: 0.3s ease, color 0.3s ease;
+}
+
+.bookmark-icon i {
+font-size: 18px;
+color: white;
+transition: color 0.3s ease;
+}
+
+.bookmark-icon i.bookmarked {
+color: #1e90ff;
+}
+
+.bookmark-icon:hover {
+transform: scale(1.15);
+background: rgba(0,0,0,0.6);
+}
+
+/* ------------------- REMOVE BUTTON ------------------- */
+.remove-icon {
+position: absolute;
+top: 10px;
+right: 10px;
+z-index: 5;
+background: rgba(255,0,0,0.3);
+padding: 6px 8px;
+border-radius: 12px;
+border: 1px solid rgba(255,255,255,0.2);
+cursor: pointer;
+transition: transform 0.25s ease, background 0.25s ease;
+}
+
+.remove-icon i {
+color: white;
+font-size: 16px;
+}
+
+.remove-icon:hover {
+transform: scale(1.15);
+background: rgba(255,0,0,0.5);
+}
+
+/* ------------------- THUMBNAIL ------------------- */
+.thumb-wrapper {
+position: relative;
+width: 100%;
+height: 160px;
+border-radius: 14px;
+overflow: hidden;
+}
+
+.thumb {
+width: 100%;
+height: 100%;
+object-fit: cover;
+border-radius: 14px;
+transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.thumb-wrapper:hover .thumb {
+transform: scale(1.1);
+}
+
+/* ------------------- PLAY ICON ON HOVER ------------------- */
+.thumb-play {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%) scale(0.7);
+font-size: 50px;
+color: white;
+opacity: 0;
+transition: 0.3s ease;
+pointer-events: none;
+text-shadow: 0 0 18px rgba(255,255,255,0.9);
+}
+
+.thumb-wrapper:hover .thumb-play {
+opacity: 1;
+transform: translate(-50%, -50%) scale(1);
+}
+
+/* ------------------- PLAYER OVERLAY ------------------- */
+#player {
+position: fixed;
+inset: 0;
+background: #000;
+display: none;
+flex-direction: column;
+z-index: 999;
+}
+
+#backBtn {
+position: absolute;
+top: 15px;
+left: 15px;
+background: rgba(30,30,30,0.8);
+padding: 12px 18px;
+border-radius: 12px;
+cursor: pointer;
+z-index: 1001;
+transition: background 0.3s, transform 0.3s;
+border: 1px solid rgba(255,255,255,0.05);
+box-shadow: 0 4px 15px rgba(0,0,0,0.35);
+}
+
+#backBtn:hover {
+background: rgba(40,40,40,0.9);
+transform: scale(1.05) translateY(-1px);
+}
+
+#playerTitle {
+position: absolute;
+top: 15px;
+left: 50%;
+transform: translateX(-50%);
+background: rgba(30,30,30,0.7);
+padding: 10px 18px;
+border-radius: 14px;
+color: white;
+font-size: 1.3em;
+z-index: 1001;
+text-align: center;
+white-space: nowrap;
+backdrop-filter: blur(10px);
+border: 1px solid rgba(255,255,255,0.05);
+box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+#gameFrame {
+width: 100%;
+height: 100%;
+border: none;
+}
+
+/* ------------------- NO RESULTS ------------------- */
+.no-results {
+text-align: center;
+padding: 20px;
+opacity: 0.9;
+}
+
+.no-results img {
+width: 170px;
+margin-top: 10px;
+opacity: 0.7;
+}
+
+/* ------------------- ANIMATIONS ------------------- */
+@keyframes fadeInUp {
+0% { opacity: 0; transform: translateY(20px); }
+100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInCard {
+0% { opacity:0; transform: translateY(20px) scale(0.9); }
+50% { transform: translateY(10px) scale(1.02); }
+100% { opacity:1; transform: translateY(0) scale(1); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <input type="text" id="search" placeholder="Search...">
+  <div id="streak"> Streak: 🔥 0 </div>
+  <div id="weather">
+    <span id="weatherEmoji">☁️</span>
+    <span id="weatherText">Loading weather...</span>
+  </div>
+  <div id="suggestions" class="suggestions"></div>
+</header>
+
+<!-- PLAYER -->
+<div id="player">
+  <div id="playerHeader">
+    <div id="backBtn"><i class="fa-solid fa-x"></i></div>
+    <h3 id="playerTitle"></h3>
+  </div>
+  <iframe id="gameFrame"></iframe>
+</div>
+
+<!-- Highlight of the Day -->
+<section id="highlightSection" style="display:none;">
+  <h2><i class="fa-solid fa-star"></i> Highlight's of the Day</h2>
+  <div id="highlightList"></div>
+</section>
+
+<section id="continue" style="display:none;">
+  <h2><i class="fa-solid fa-clock-rotate-left"></i> Continue Playing</h2>
+  <div id="continueList"></div>
+</section>
+
+<section id="favorites" style="display:none;">
+  <h2><i class="fa-solid fa-bookmark"></i> Bookmarks </h2>
+  <div id="favList"></div>
+</section>
+
+<section id="results">
+  <h2><i class="fa-solid fa-rocket"></i> Jumpman64</h2>
+  <div id="gameList"></div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+<script>
+/* ===================== ELEMENTS ===================== */
+const gameList = document.getElementById("gameList");
+const highlightList = document.getElementById("highlightList");
+const favList = document.getElementById("favList");
+const continueList = document.getElementById("continueList");
+const continueSection = document.getElementById("continue");
+const favoriteSection = document.getElementById("favorites");
+const highlightSection = document.getElementById("highlightSection");
+const search = document.getElementById("search");
+const suggestions = document.getElementById("suggestions");
+const streakEl = document.getElementById("streak");
+
+const player = document.getElementById("player");
+const gameFrame = document.getElementById("gameFrame");
+const playerTitle = document.getElementById("playerTitle");
+const backBtn = document.getElementById("backBtn");
+
+/* ===================== STATE ===================== */
+let allGames = [];
+let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+let lastPlayed = JSON.parse(localStorage.getItem("continue") || "null");
+let isSearching = false;
+
+/* ===================== STORAGE ===================== */
+function saveFavorites() {
+  localStorage.setItem("favorites", JSON.stringify(favorites));
+}
+function saveContinue(name) {
+  localStorage.setItem("continue", JSON.stringify(name));
+}
+
+/* ===================== PLAYER ===================== */
+function openGame(name, url) {
+  saveContinue(name);
+  lastPlayed = name;
+  player.style.display = "flex";
+  playerTitle.textContent = name;
+  gameFrame.src = url;
+  renderContinue();
+}
+
+backBtn.onclick = () => {
+  gameFrame.src = "";
+  player.style.display = "none";
+};
+
+/* ===================== FETCH GAMES (GITHUB RAW TXT) ===================== */
+fetch("https://raw.githubusercontent.com/code-andrewy/Games1232/main/games.txt")
+  .then(res => res.text())
+  .then(raw => {
+    const lines = raw
+      .split("\n")
+      .map(l => l.trim())
+      .filter(l => l !== "");
+
+    for (let i = 0; i < lines.length; i += 3) {
+      allGames.push({
+        url: lines[i].replace("Website url:", "").trim(),
+        name: lines[i + 1].replace("Game name:", "").trim(),
+        img: lines[i + 2].replace("Image url:", "").trim()
+      });
+    }
+
+    renderHighlightOfDay();
+    renderFavorites();
+    renderContinue();
+    loadNextBatch();
+  })
+  .catch(err => console.error("Failed to load games list", err));
+
+/* ===================== SEEDED RNG ===================== */
+function seededRandom(seed) {
+  return (Math.sin(seed) * 10000) % 1;
+}
+
+/* ===================== GAME CARD ===================== */
+function createCard(g, delay = 0, isHighlight = false, isRemovable = false) {
+  const isFav = favorites.includes(g.name);
+  const div = document.createElement("div");
+  div.className = "game-card";
+  div.style.animationDelay = `${delay * 0.05}s`;
+
+  div.innerHTML = `
+    <div class="thumb-wrapper" onclick="openGame('${g.name}','${g.url}')">
+      <img src="${g.img}" class="thumb">
+      <i class="thumb-play fa-solid fa-play"></i>
+    </div>
+    <strong>${g.name}</strong>
+    <div class="bookmark-icon" onclick="toggleFavorite('${g.name}', this)">
+      <i class="fa-solid fa-bookmark ${isFav ? "bookmarked" : ""}"></i>
+    </div>
+  `;
+
+  if (isRemovable) {
+    const removeBtn = document.createElement("div");
+    removeBtn.className = "remove-icon";
+    removeBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+    removeBtn.onclick = e => {
+      e.stopPropagation();
+      if (favList.contains(div)) removeFavorite(g.name);
+      else if (continueList.contains(div)) removeContinue();
+    };
+    div.appendChild(removeBtn);
+  }
+
+  return div;
+}
+
+/* ===================== HIGHLIGHT ===================== */
+function renderHighlightOfDay() {
+  if (!allGames.length) return;
+
+  highlightSection.style.display = "block";
+  highlightList.innerHTML = "";
+
+  const today = new Date();
+  const seed =
+    today.getFullYear() * 10000 +
+    (today.getMonth() + 1) * 100 +
+    today.getDate();
+
+  const shuffled = [...allGames].sort(
+    (a, b) =>
+      seededRandom(seed + a.name.charCodeAt(0)) -
+      seededRandom(seed + b.name.charCodeAt(0))
+  );
+
+  shuffled.slice(0, 5).forEach((g, i) => {
+    highlightList.appendChild(createCard(g, i, true, false));
+  });
+}
+
+/* ===================== LAZY LOAD ===================== */
+let currentIndex = 0;
+const cardsPerRow = 5;
+const rowsPerBatch = 3;
+
+function loadNextBatch() {
+  const batchSize = cardsPerRow * rowsPerBatch;
+  const end = Math.min(currentIndex + batchSize, allGames.length);
+
+  for (let i = currentIndex; i < end; i++) {
+    gameList.appendChild(createCard(allGames[i], i - currentIndex));
+  }
+  currentIndex = end;
+}
+
+window.addEventListener("scroll", () => {
+  if (
+    window.innerHeight + window.scrollY >=
+    document.body.offsetHeight - 300
+  ) {
+    if (!isSearching && currentIndex < allGames.length) {
+      loadNextBatch();
+    }
+  }
+});
+
+/* ===================== FAVORITES ===================== */
+function toggleFavorite(name, iconEl) {
+  const iEl = iconEl.querySelector("i");
+
+  if (!favorites.includes(name)) {
+    favorites.push(name);
+    iEl.classList.add("bookmarked");
+  } else {
+    favorites = favorites.filter(f => f !== name);
+    iEl.classList.remove("bookmarked");
+  }
+
+  saveFavorites();
+  renderFavorites();
+}
+
+function renderFavorites() {
+  if (!favorites.length) {
+    favoriteSection.style.display = "none";
+    return;
+  }
+
+  favoriteSection.style.display = "block";
+  favList.innerHTML = "";
+
+  favorites.forEach(name => {
+    const game = allGames.find(g => g.name === name);
+    if (game) favList.appendChild(createCard(game, 0, false, true));
+  });
+}
+
+function removeFavorite(name) {
+  favorites = favorites.filter(f => f !== name);
+  saveFavorites();
+  renderFavorites();
+}
+
+/* ===================== CONTINUE ===================== */
+function removeContinue() {
+  lastPlayed = null;
+  saveContinue(null);
+  renderContinue();
+}
+
+function renderContinue() {
+  if (!lastPlayed) {
+    continueSection.style.display = "none";
+    return;
+  }
+
+  const game = allGames.find(g => g.name === lastPlayed);
+  if (!game) return;
+
+  continueSection.style.display = "block";
+  continueList.innerHTML = "";
+  continueList.appendChild(createCard(game, 0, false, true));
+}
+
+/* ===================== SEARCH ===================== */
+function showNoResults() {
+  gameList.innerHTML = `
+    <div style="text-align:center;padding:20px;">
+      <h2>⚠️ No results found</h2>
+    </div>
+  `;
+}
+
+function renderFilteredResults(filtered) {
+  isSearching = true;
+  gameList.innerHTML = "";
+
+  if (!filtered.length) {
+    showNoResults();
+    return;
+  }
+
+  filtered.forEach((g, i) =>
+    gameList.appendChild(createCard(g, i))
+  );
+}
+
+search.addEventListener("input", () => {
+  const q = search.value.toLowerCase().trim();
+  suggestions.innerHTML = "";
+
+  if (!q) {
+    isSearching = false;
+    suggestions.classList.remove("show");
+    gameList.innerHTML = "";
+    currentIndex = 0;
+    loadNextBatch();
+    return;
+  }
+
+  const filtered = allGames.filter(g =>
+    g.name.toLowerCase().includes(q)
+  );
+
+  filtered.slice(0, 6).forEach(g => {
+    const div = document.createElement("div");
+    div.textContent = g.name;
+    div.onclick = () => {
+      search.value = g.name;
+      suggestions.classList.remove("show");
+      renderFilteredResults([g]);
+    };
+    suggestions.appendChild(div);
+  });
+
+  suggestions.classList.add("show");
+  renderFilteredResults(filtered);
+});
+
+document.addEventListener("click", e => {
+  if (!search.contains(e.target) && !suggestions.contains(e.target)) {
+    suggestions.classList.remove("show");
+  }
+});
+
+/* ===================== STREAK ===================== */
+const todayStr = new Date().toISOString().split("T")[0];
+let streakData = JSON.parse(
+  localStorage.getItem("streakData") || '{"count":0,"lastLogin":""}'
+);
+
+if (streakData.lastLogin !== todayStr) {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  streakData.count =
+    streakData.lastLogin ===
+    yesterday.toISOString().split("T")[0]
+      ? streakData.count + 1
+      : 1;
+
+  streakData.lastLogin = todayStr;
+  localStorage.setItem("streakData", JSON.stringify(streakData));
+}
+
+streakEl.textContent = `Streak:🔥 ${streakData.count}`;
+
+/* ===================== WEATHER ===================== */
+$(document).ready(function () {
+  const loc = { lat: 43.4426, lon: -71.2776 };
+
+  function getWeather(lat, lon) {
+    $.ajax({
+      url: `https://api.weather.gov/points/${lat},${lon}`,
+      success: data => {
+        $.ajax({
+          url: data.properties.forecast,
+          success: fore => {
+            const f = fore.properties.periods[0];
+            $("#weatherText").text(
+              `${f.temperature}°${f.temperatureUnit} — ${f.shortForecast}`
+            );
+
+            let emoji = "☁️";
+            if (/sunny/i.test(f.shortForecast)) emoji = "☀️";
+            else if (/rain/i.test(f.shortForecast)) emoji = "🌧️";
+            else if (/snow/i.test(f.shortForecast)) emoji = "❄️";
+            else if (/storm|thunder/i.test(f.shortForecast)) emoji = "⛈️";
+            else if (/clear/i.test(f.shortForecast)) emoji = "🌞";
+
+            $("#weatherEmoji").text(emoji);
+          }
+        });
+      }
+    });
+  }
+
+  getWeather(loc.lat, loc.lon);
+  setInterval(() => getWeather(loc.lat, loc.lon), 300000);
+});
+</script>
+</body>
+</html>
