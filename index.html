@@ -6,14 +6,26 @@
 <title>Jumpman64 — Fetch & Run Games</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-:root{--bg:#0b0b0b;--muted:rgba(255,255,255,0.65)}
+:root{
+  --bg:#0b0b0b;
+  --muted:rgba(255,255,255,0.65);
+  --accent:#1e90ff;
+  --card-bg:rgba(255,255,255,0.03);
+  --card-hover:rgba(255,255,255,0.05);
+  --transition:0.35s cubic-bezier(0.4,0,0.2,1);
+}
 *{box-sizing:border-box}
 body{
   background:var(--bg);
   color:#fff;
   font-family:"Segoe UI",Arial,sans-serif;
-  margin:0;padding:0;overflow-x:hidden;
+  margin:0;
+  padding:0;
+  overflow-x:hidden;
   -webkit-font-smoothing:antialiased;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
 }
 
 /* Header */
@@ -27,7 +39,9 @@ header{
   position:sticky;top:0;z-index:60;
   border-bottom:1px solid rgba(255,255,255,0.04);
   backdrop-filter: blur(8px);
+  transition:all 0.3s ease;
 }
+header:hover{transform:translateY(-2px)}
 .header-left{position:relative}
 
 /* Search */
@@ -39,65 +53,187 @@ header{
   background:rgba(255,255,255,0.03);
   color:#fff;
   outline:none;
+  transition:all 0.3s ease;
 }
-#search:focus{width:380px;transform:scale(1.01)}
+#search:focus{width:380px;transform:scale(1.02)}
 
 .suggestions{
   position:absolute;left:0;top:46px;
-  width:320px;background:rgba(18,18,18,0.95);
-  border-radius:12px;padding:6px;display:none;z-index:200;
+  width:320px;
+  background:rgba(18,18,18,0.95);
+  border-radius:12px;
+  padding:6px;
+  display:none;
+  z-index:200;
   box-shadow:0 8px 30px rgba(0,0,0,0.6);
+  opacity:0;
+  transform:translateY(-10px);
+  transition:opacity 0.3s ease, transform 0.3s ease;
 }
-.suggestions.show{display:block}
-.suggestions div{padding:10px;border-radius:10px;cursor:pointer}
-.suggestions div:hover{background:rgba(255,255,255,0.02)}
+.suggestions.show{
+  display:block;
+  opacity:1;
+  transform:translateY(0);
+}
+.suggestions div{
+  padding:10px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:background 0.2s, transform 0.2s;
+}
+.suggestions div:hover{
+  background:rgba(255,255,255,0.02);
+  transform:scale(1.02);
+}
 
 /* Header widgets */
 #streak{font-weight:600}
 #weather{display:flex;gap:8px;align-items:center}
 
 /* Sections */
-section{display:flex;flex-direction:column;align-items:center;margin:22px 14px;opacity:0;transform:translateY(20px);animation:fadeInUp .7s forwards}
-section h2{margin:6px 0 16px;font-size:1.6rem;letter-spacing:0.6px}
+section{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin:22px 14px;
+  opacity:0;
+  transform:translateY(20px);
+  animation:fadeInUp 0.7s forwards;
+  transition:all 0.3s ease;
+}
+section h2{
+  margin:6px 0 16px;
+  font-size:1.6rem;
+  letter-spacing:0.6px;
+  text-align:center;
+}
 
 /* Lists */
-#highlightList,#gameList,#favList,#continueList{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;max-width:1400px}
+#highlightList,#gameList,#favList,#continueList{
+  display:flex;
+  flex-wrap:wrap;
+  gap:18px;
+  justify-content:center;
+  max-width:1400px;
+  width:100%;
+}
 
 /* Card */
 .game-card{
-  width:220px;background:rgba(255,255,255,0.03);padding:16px;border-radius:14px;
-  text-align:center;position:relative;cursor:pointer;border:1px solid rgba(255,255,255,0.04);
-  transform-origin:center center;box-shadow:0 8px 28px rgba(0,0,0,0.5);
-  opacity:0;animation:fadeInCard .6s forwards;
+  width:220px;
+  background:var(--card-bg);
+  padding:16px;
+  border-radius:14px;
+  text-align:center;
+  position:relative;
+  cursor:pointer;
+  border:1px solid rgba(255,255,255,0.04);
+  transform-origin:center center;
+  box-shadow:0 8px 28px rgba(0,0,0,0.5);
+  opacity:0;
+  animation:fadeInCard 0.6s forwards;
+  transition:transform var(--transition), background var(--transition), box-shadow var(--transition);
 }
-.game-card:hover{transform:translateY(-6px) scale(1.04);background:rgba(255,255,255,0.04)}
-.thumb-wrapper{height:140px;overflow:hidden;border-radius:10px}
-.thumb{width:100%;height:100%;object-fit:cover;display:block}
+.game-card:hover{
+  transform:translateY(-6px) scale(1.05);
+  background:var(--card-hover);
+  box-shadow:0 12px 40px rgba(0,0,0,0.6);
+}
+.thumb-wrapper{
+  height:140px;
+  overflow:hidden;
+  border-radius:10px;
+}
+.thumb{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  transition:transform var(--transition);
+}
+.thumb-wrapper:hover .thumb{transform:scale(1.08)}
 
 /* icons */
-.bookmark-icon{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.45);padding:6px 8px;border-radius:10px}
-.bookmark-icon i{color:#fff}
-.bookmark-icon i.bookmarked{color:#1e90ff}
-.remove-icon{position:absolute;top:10px;right:10px;background:rgba(255,0,0,0.18);padding:6px;border-radius:10px}
+.bookmark-icon{
+  position:absolute;top:10px;left:10px;
+  background:rgba(0,0,0,0.45);
+  padding:6px 8px;border-radius:10px;
+  cursor:pointer;
+  transition:all 0.25s ease;
+}
+.bookmark-icon i{color:#fff;transition:color 0.3s}
+.bookmark-icon i.bookmarked{color:var(--accent)}
+.remove-icon{
+  position:absolute;top:10px;right:10px;
+  background:rgba(255,0,0,0.18);
+  padding:6px;border-radius:10px;
+  cursor:pointer;
+  transition:all 0.25s ease;
+}
 .remove-icon i{color:#fff}
+.remove-icon:hover{background:rgba(255,0,0,0.35);transform:scale(1.1)}
 
 /* Player overlay */
-#player{position:fixed;inset:0;background:#000;display:none;flex-direction:column;z-index:999}
-#playerHeader{position:relative;padding:12px}
-#backBtn{position:absolute;top:14px;left:14px;background:rgba(32,32,32,0.9);padding:10px;border-radius:12px;cursor:pointer;z-index:1100;border:1px solid rgba(255,255,255,0.04)}
+#player{
+  position:fixed;inset:0;
+  background:#000;
+  display:none;
+  flex-direction:column;
+  z-index:999;
+  align-items:center;
+  justify-content:center;
+}
+#playerHeader{
+  position:relative;
+  padding:12px;
+  width:100%;
+}
+#backBtn{
+  position:absolute;top:14px;left:14px;
+  background:rgba(32,32,32,0.9);
+  padding:10px;border-radius:12px;
+  cursor:pointer;
+  z-index:1100;
+  border:1px solid rgba(255,255,255,0.04);
+  transition:all 0.3s ease;
+}
+#backBtn:hover{transform:scale(1.05)}
 #backBtn i{font-size:18px}
-#playerTitle{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(28,28,28,0.8);padding:8px 16px;border-radius:12px;z-index:1100}
-#gameContainer{flex:1;overflow:auto;padding:18px}
+#playerTitle{
+  position:absolute;top:14px;left:50%;
+  transform:translateX(-50%);
+  background:rgba(28,28,28,0.8);
+  padding:8px 16px;
+  border-radius:12px;
+  z-index:1100;
+  text-align:center;
+}
+#gameContainer{
+  flex:1;
+  overflow:auto;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
 
 /* injected wrapper */
-.injected-wrapper{min-height:100%;width:100%}
+.injected-wrapper{min-height:100%;width:100%;display:flex;align-items:center;justify-content:center}
 
 /* no-results */
-.no-results{text-align:center;padding:24px;color:var(--muted)}
+.no-results{text-align:center;padding:24px;color:var(--muted);opacity:0;animation:fadeInUp 0.5s forwards}
 
 /* Animations */
-@keyframes fadeInUp{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:none}}
-@keyframes fadeInCard{0%{opacity:0;transform:translateY(20px) scale(.95)}50%{transform:translateY(8px) scale(1.01)}100%{opacity:1;transform:none}}
+@keyframes fadeInUp{
+  0%{opacity:0;transform:translateY(20px)}
+  100%{opacity:1;transform:translateY(0)}
+}
+@keyframes fadeInCard{
+  0%{opacity:0;transform:translateY(20px) scale(.95)}
+  50%{transform:translateY(8px) scale(1.01)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
 </style>
 </head>
 <body>
