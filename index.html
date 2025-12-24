@@ -373,9 +373,9 @@ const suggestions = document.getElementById("suggestions");
 const streakEl = document.getElementById("streak");
 
 const player = document.getElementById("player");
-const gameFrame = document.getElementById("gameFrame");
 const playerTitle = document.getElementById("playerTitle");
 const backBtn = document.getElementById("backBtn");
+const gameContainer = document.getElementById("gameContainer");
 
 /* ===================== STATE ===================== */
 let allGames = [];
@@ -397,12 +397,34 @@ function openGame(name, url) {
   lastPlayed = name;
   player.style.display = "flex";
   playerTitle.textContent = name;
-  gameFrame.src = url;
+  gameContainer.innerHTML = `<p>Loading game...</p>`;
+
+  // Fetch HTML from GitHub raw URL
+  fetch(url)
+    .then(res => res.text())
+    .then(html => {
+      gameContainer.innerHTML = html;
+
+      // Execute inline scripts
+      const scripts = gameContainer.querySelectorAll("script");
+      scripts.forEach(oldScript => {
+        const newScript = document.createElement("script");
+        if (oldScript.src) newScript.src = oldScript.src;
+        else newScript.textContent = oldScript.textContent;
+        document.body.appendChild(newScript);
+        oldScript.remove();
+      });
+    })
+    .catch(err => {
+      gameContainer.innerHTML = `<p style="color:red;">Failed to load game</p>`;
+      console.error(err);
+    });
+
   renderContinue();
 }
 
 backBtn.onclick = () => {
-  gameFrame.src = "";
+  gameContainer.innerHTML = "";
   player.style.display = "none";
 };
 
@@ -443,15 +465,21 @@ function createCard(g, delay = 0, isHighlight = false, isRemovable = false) {
   div.style.animationDelay = `${delay * 0.05}s`;
 
   div.innerHTML = `
-    <div class="thumb-wrapper" onclick="openGame('${g.name}','${g.url}')">
+    <div class="thumb-wrapper">
       <img src="${g.img}" class="thumb">
       <i class="thumb-play fa-solid fa-play"></i>
     </div>
     <strong>${g.name}</strong>
-    <div class="bookmark-icon" onclick="toggleFavorite('${g.name}', this)">
+    <div class="bookmark-icon">
       <i class="fa-solid fa-bookmark ${isFav ? "bookmarked" : ""}"></i>
     </div>
   `;
+
+  div.querySelector(".thumb-wrapper").onclick = () => openGame(g.name, g.url);
+  div.querySelector(".bookmark-icon").onclick = e => {
+    e.stopPropagation();
+    toggleFavorite(g.name, div.querySelector(".bookmark-icon"));
+  };
 
   if (isRemovable) {
     const removeBtn = document.createElement("div");
