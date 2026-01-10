@@ -324,6 +324,29 @@ const playerTitle = document.getElementById("playerTitle");
 const backBtn = document.getElementById("backBtn");
 const gameContainer = document.getElementById("gameContainer");
 
+/* ===================== FALLBACK IMAGE ===================== */
+const FALLBACK_IMG = "https://raw.githubusercontent.com/code-andrewy/jumpman64beta/refs/heads/main/Drawing.png";
+
+/* Helper to attach fallback behavior to an <img> element */
+function attachImageFallback(imgEl) {
+  if (!imgEl) return;
+  // If the src is empty or falsy, set fallback immediately
+  if (!imgEl.src || imgEl.src.trim() === "") {
+    imgEl.src = FALLBACK_IMG;
+    return;
+  }
+  // Avoid multiple handlers
+  if (imgEl.dataset.fallbackAttached) return;
+  imgEl.dataset.fallbackAttached = "1";
+
+  imgEl.addEventListener("error", () => {
+    if (imgEl.src === FALLBACK_IMG) return;
+    // clear srcset (if any) to prevent the browser from trying alternate broken sources
+    try { imgEl.srcset = ""; } catch (e) {}
+    imgEl.src = FALLBACK_IMG;
+  });
+}
+
 /* ===================== STATE ===================== */
 let allGames = [];
 let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
@@ -351,7 +374,11 @@ function openGame(name, url) {
     .then(html => {
       const wrapper = document.createElement("div");
       wrapper.className = "injected-wrapper";
-      wrapper.innerHTML = html;
+      wrapper.innerHTML = html || "";
+
+      // Attach fallback to any images inside the injected content
+      wrapper.querySelectorAll("img").forEach(img => attachImageFallback(img));
+
       gameContainer.innerHTML = "";
       gameContainer.appendChild(wrapper);
 
@@ -391,7 +418,7 @@ fetch("https://raw.githubusercontent.com/code-andrewy/jumpman/refs/heads/main/li
       allGames.push({
         url: lines[i].replace("Website url:", "").trim(),
         name: lines[i + 1].replace("Game name:", "").trim(),
-        img: lines[i + 2].replace("Image url:", "").trim()
+        img: (lines[i + 2].replace("Image url:", "").trim()) || FALLBACK_IMG
       });
     }
 
@@ -414,15 +441,22 @@ function createCard(g, delay = 0, isHighlight = false, isRemovable = false) {
   div.className = "game-card";
   div.style.animationDelay = `${delay * 0.05}s`;
 
+  // Use fallback if g.img is falsy
+  const imgSrc = g.img && g.img.trim() ? g.img : FALLBACK_IMG;
+
   div.innerHTML = `
     <div class="thumb-wrapper">
-      <img src="${g.img}" class="thumb">
+      <img src="${imgSrc}" class="thumb" loading="lazy" alt="${g.name}">
     </div>
     <strong>${g.name}</strong>
     <div class="bookmark-icon">
       <i class="fa-solid fa-bookmark ${isFav ? "bookmarked" : ""}"></i>
     </div>
   `;
+
+  // Attach fallback to the thumbnail image
+  const imgEl = div.querySelector(".thumb");
+  attachImageFallback(imgEl);
 
   // Open game
   div.querySelector(".thumb-wrapper").onclick = () => openGame(g.name, g.url);
