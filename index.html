@@ -361,7 +361,17 @@ function saveContinue(name) {
   localStorage.setItem("continue", JSON.stringify(name));
 }
 
-/* ===================== PLAYER ===================== */
+/* ===================== URL HELPER ===================== */
+function isGitHubRawUrl(url) {
+  try {
+    const u = new URL(url);
+    return /raw\.githubusercontent\.com$/i.test(u.hostname) || /raw\.githubusercontent\.com/i.test(url);
+  } catch (e) {
+    return false;
+  }
+}
+
+/* ===================== PLAYER (updated) ===================== */
 function openGame(name, url) {
   saveContinue(name);
   lastPlayed = name;
@@ -369,33 +379,94 @@ function openGame(name, url) {
   playerTitle.textContent = name;
   gameContainer.innerHTML = `<p style="color:white;">Loading game...</p>`;
 
-  fetch(url)
-    .then(res => res.text())
-    .then(html => {
-      const wrapper = document.createElement("div");
-      wrapper.className = "injected-wrapper";
-      wrapper.innerHTML = html || "";
+  // If it's a GitHub raw URL, fetch and inject HTML (existing behavior)
+  if (isGitHubRawUrl(url)) {
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.text();
+      })
+      .then(html => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "injected-wrapper";
+        wrapper.innerHTML = html || "";
 
-      // Attach fallback to any images inside the injected content
-      wrapper.querySelectorAll("img").forEach(img => attachImageFallback(img));
+        // Attach fallback to any images inside the injected content
+        wrapper.querySelectorAll("img").forEach(img => attachImageFallback(img));
 
-      gameContainer.innerHTML = "";
-      gameContainer.appendChild(wrapper);
+        gameContainer.innerHTML = "";
+        gameContainer.appendChild(wrapper);
 
-      // Execute inline scripts
-      const scripts = wrapper.querySelectorAll("script");
-      scripts.forEach(oldScript => {
-        const newScript = document.createElement("script");
-        if (oldScript.src) newScript.src = oldScript.src;
-        else newScript.textContent = oldScript.textContent;
-        document.body.appendChild(newScript);
-        oldScript.remove();
+        // Execute inline scripts
+        const scripts = wrapper.querySelectorAll("script");
+        scripts.forEach(oldScript => {
+          const newScript = document.createElement("script");
+          if (oldScript.src) newScript.src = oldScript.src;
+          else newScript.textContent = oldScript.textContent;
+          document.body.appendChild(newScript);
+          oldScript.remove();
+        });
+      })
+      .catch(err => {
+        gameContainer.innerHTML = `<p style="color:red;">Failed to load game</p>`;
+        console.error(err);
+      })
+      .finally(() => {
+        renderContinue();
       });
-    })
-    .catch(err => {
-      gameContainer.innerHTML = `<p style="color:red;">Failed to load game</p>`;
-      console.error(err);
-    });
+
+    return;
+  }
+
+  // Otherwise, load the site inside an iframe
+  // Note: some sites disallow being loaded in an iframe (X-Frame-Options / CSP).
+  gameContainer.innerHTML = ""; // clear
+  const iframe = document.createElement("iframe");
+  iframe.className = "game-iframe";
+  iframe.src = url;
+  iframe.style.width = "100%";
+  iframe.style.height = "100%";
+  iframe.style.border = "0";
+  iframe.loading = "lazy";
+
+  // show a loading overlay until iframe loads
+  const loading = document.createElement("div");
+  loading.className = "iframe-loading";
+  loading.innerHTML = `<p style="color:white;">Loading external site...</p>`;
+  gameContainer.appendChild(loading);
+  gameContainer.appendChild(iframe);
+
+  let loaded = false;
+  const failTimeout = setTimeout(() => {
+    if (!loaded) {
+      // show friendly fallback with a link to open externally
+      gameContainer.innerHTML = `
+        <div class="iframe-fallback" style="color:white;">
+          <p>Couldn't embed this site (it may disallow framing). You can open it in a new tab:</p>
+          <p><a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a></p>
+          <p style="font-size:0.9em;color:#ddd">If you control the external site, allow iframe embedding or host the playable HTML as a raw GitHub file to enable inline play.</p>
+        </div>
+      `;
+    }
+  }, 3000);
+
+  iframe.onload = () => {
+    loaded = true;
+    try {
+      if (loading && loading.parentNode) loading.parentNode.removeChild(loading);
+    } catch (e) {}
+    clearTimeout(failTimeout);
+  };
+
+  iframe.onerror = () => {
+    clearTimeout(failTimeout);
+    gameContainer.innerHTML = `
+      <div class="iframe-fallback" style="color:white;">
+        <p>Failed to load embedded site. Open in a new tab:</p>
+        <p><a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a></p>
+      </div>
+    `;
+  };
 
   renderContinue();
 }
@@ -655,5 +726,7 @@ function updateWeather(lat = 43.4426, lon = -71.2776) {
 updateWeather();
 setInterval(updateWeather, 300000); // update every 5 min
 </script>
+
+
 </body>
 </html>
