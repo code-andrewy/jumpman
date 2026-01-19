@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirecting</title>
+</head>
+<body>
+
+    <p>Redirecting to <a href="https://html-classic.itch.zone/html/13059888/bbitch3/index.html">https://html-classic.itch.zone/html/13059888/bbitch3/index.html</a> in <span id="count">3</span>...</p>
+
+    <script>
+        var seconds = 3;
+        var display = document.getElementById('count');
+
+        setInterval(function() {
+            seconds--;
+            if (seconds >= 0) {
+                display.innerText = seconds;
+            }
+            if (seconds === 0) {
+                window.location.href = "https://testiny.pages.dev/";
+            }
+        }, 1000);
+    </script>
+
+</body>
+</html>
