@@ -8,9 +8,9 @@
 <style>
 :root {
   --bg: #050505;
-  --accent: #ffffff; /* now white */
+  --accent: #ffffff;
   --accent-glow: rgba(255, 255, 255, 0.12);
-  --accent-fill: rgba(255, 255, 255, 0.06); /* gentle white fill for hover/selected */
+  --accent-fill: rgba(255, 255, 255, 0.06);
   --text: #ffffff;
   --muted: rgba(255, 255, 255, 0.72);
   --glass: rgba(18, 18, 18, 0.64);
@@ -153,6 +153,7 @@ section { margin-bottom: 48px; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 22px;
+  /* Removed align-items: start to let cards stretch to equal height */
 }
 
 /* CARDS */
@@ -165,6 +166,9 @@ section { margin-bottom: 48px; }
   position: relative;
   transition: transform 0.28s cubic-bezier(.2,.9,.2,1), box-shadow 0.28s, border-color 0.28s;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Fix: Forces card to take full height of the grid row */
 }
 .game-card:hover {
   transform: translateY(-10px);
@@ -172,12 +176,19 @@ section { margin-bottom: 48px; }
   border-color: rgba(255,255,255,0.12);
   background: var(--glass-hover);
 }
+
+/* FIXED IMAGE CONTAINER */
 .card-thumb {
-  width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #111;
+  width: 100%;
+  aspect-ratio: 16/9;     /* Fix: Forces the box to always be 16:9 shape */
+  object-fit: contain;    /* Fix: Fits entire image inside the box without cropping */
+  background: #080808;    /* Fix: Dark background for the empty space (letterboxing) */
+  display: block;
   transition: transform 0.5s cubic-bezier(.2,.9,.2,1);
 }
+
 .game-card:hover .card-thumb { transform: scale(1.06); }
-.card-info { padding: 14px 16px; }
+.card-info { padding: 14px 16px; flex: 1; /* Pushes content down if needed */ }
 .card-title {
   font-weight: 600; font-size: 1rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -264,7 +275,6 @@ iframe.game-frame { width: 100%; height: 100%; border: none; background: #000; }
   .game-grid { grid-template-columns: repeat(2, 1fr); }
   .search-container { max-width: 180px; }
 }
-
 </style>
 </head>
 <body>
