@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord | Jumpman64</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --card-bg: rgba(49, 51, 56, 0.96);
+            --brand-color: #5865F2;
+            --brand-hover: #4752C4;
+            --text-main: #f2f3f5;
+            --text-muted: #b5bac1;
+            --online-green: #23a559;
+            --members-grey: #80848e;
+            --input-bg: #1e1f22;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            font-family: 'gg sans', 'Noto Sans', sans-serif;
+            overflow: hidden;
+            background-color: #111214;
+        }
+
+        .background {
+            height: 100vh;
+            width: 100vw;
+            background-image: url('https://raw.githubusercontent.com/code-andrewy/jumpman64beta/e1ab80e1b67738be48bbc0d311dfa1011a528fcd/download%20(1).svg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .top-logo {
+            position: absolute;
+            top: 32px;
+            left: 32px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .invite-card {
+            background-color: var(--card-bg);
+            backdrop-filter: blur(8px);
+            width: 90%;
+            max-width: 440px;
+            padding: 32px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .avatar-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 24px;
+            margin-bottom: 20px;
+        }
+
+        .invite-subtext {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .server-name {
+            color: var(--text-main);
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        /* Accept Button Styling */
+        .accept-btn {
+            background-color: var(--brand-color);
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px;
+            border-radius: 3px;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 12px; /* Space between button and code */
+            transition: background 0.2s;
+        }
+
+        .accept-btn:hover { background-color: var(--brand-hover); }
+
+        /* Copy Invite Section */
+        .copy-section {
+            background-color: var(--input-bg);
+            border-radius: 4px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+
+        .invite-code-text {
+            color: var(--text-main);
+            font-family: monospace;
+            font-size: 15px;
+        }
+
+        .copy-btn {
+            color: var(--text-muted);
+            cursor: pointer;
+            border: none;
+            background: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .copy-btn:hover { color: white; }
+        .copy-btn.copied { color: var(--online-green); }
+    </style>
+</head>
+<body>
+
+    <div class="background">
+        <a href="#" class="top-logo">
+            <i class="fa-brands fa-discord fa-lg"></i> DISCORD
+        </a>
+
+        <div class="invite-card">
+            <img src="https://cdn.discordapp.com/embed/avatars/0.png" class="avatar-img">
+            
+            <p class="invite-subtext">You've been invited to join</p>
+            <h1 class="server-name">Jumpman64</h1>
+
+            <a href="https://discord.gg/eqnWDzZux9" target="_blank" rel="noopener noreferrer" class="accept-btn">
+                <i class="fa-solid fa-user-plus"></i> Accept Invite
+            </a>
+
+            <div class="copy-section">
+                <span class="invite-code-text" id="invite-code">eqnWDzZux9</span>
+                <button class="copy-btn" onclick="copyInvite()" id="copy-btn">
+                    <i class="fa-regular fa-copy"></i>
+                    <span id="copy-text">Copy</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyInvite() {
+            const code = document.getElementById('invite-code').innerText;
+            const btn = document.getElementById('copy-btn');
+            const text = document.getElementById('copy-text');
+
+            navigator.clipboard.writeText(code).then(() => {
+                btn.classList.add('copied');
+                text.innerText = "Copied!";
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    text.innerText = "Copy";
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
