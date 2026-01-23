@@ -1,155 +1,1485 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jumpman64</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;600&display=swap" rel="stylesheet">
-    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Jumpman64 | Web view</title>
+    <link rel="icon" href="https://img.icons8.com/emoji/48/chicken-emoji.png" type="image/x-icon">
+    <meta name="theme-color" content="#0b1020" />
+
+    <!-- Font & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
     <style>
         :root {
-            --bg: #0a0a0a;
-            --accent: #ffffff;
-            --muted: #404040;
-            --scanline-opacity: 0.03;
+            --bg-overlay: radial-gradient(circle at center, rgba(26, 26, 46, 0.85) 0%, rgba(0, 0, 0, 0.95) 100%);
+            --text-main: #e0f7fa;
+            --text-accent: #00ffff;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(255, 255, 255, 0.07);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --suggest-bg: rgba(0, 0, 0, 0.8);
+            --max-width: 1100px;
+            --topbar-height: 64px;
+            --glass-border-radius: 14px;
         }
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
+        [data-theme="light"] {
+            --bg-overlay: radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, rgba(240, 240, 255, 0.9) 100%);
+            --text-main: #1a1a2e;
+            --text-accent: #007bff;
+            --card-bg: rgba(255, 255, 255, 0.4);
+            --card-border: rgba(0, 0, 0, 0.08);
+            --input-bg: rgba(0, 0, 0, 0.05);
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --suggest-bg: rgba(255, 255, 255, 0.92);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
             height: 100%;
-            background-color: var(--bg);
-            color: var(--accent);
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
         }
 
-        /* Subtle CRT/Scanline Overlay */
-        body::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
-            z-index: 10;
-            background-size: 100% 4px, 3px 100%;
-            pointer-events: none;
-            opacity: var(--scanline-opacity);
-        }
-
-        .container {
-            text-align: center;
+        body {
+            margin: 0;
             position: relative;
-            z-index: 5;
-            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+            font-family: 'Outfit', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            transition: background .3s ease, color .3s ease;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding-top: calc(var(--topbar-height) + 16px);
         }
 
-        .status-pill {
-            display: inline-block;
-            padding: 4px 12px;
-            border: 1px solid var(--muted);
-            border-radius: 100px;
-            font-size: 10px;
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background: var(--bg-overlay);
+            z-index: 0;
+        }
+
+        .top-bar {
+            position: fixed;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%;
+            max-width: var(--max-width);
+            height: calc(var(--topbar-height)-8px);
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+            padding: 8px;
+            z-index: 3;
+            pointer-events: auto;
+            backdrop-filter: blur(6px);
+        }
+
+        .icon-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            width: 50px;
+            height: 50px;
+            min-width: 50px;
+            border-radius: 999px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: transform .15s ease, background .15s ease;
+            text-decoration: none;
+        }
+
+        .icon-btn:hover {
+            transform: translateY(-2px);
+            background: var(--text-accent);
+            color: #000;
+            border-color: transparent;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            width: 95%;
+            max-width: var(--max-width);
+            margin: 0 auto 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .greeting {
+            font-size: 12px;
+            color: var(--text-accent);
             letter-spacing: 2px;
             text-transform: uppercase;
-            color: var(--muted);
-            margin-bottom: 24px;
+            font-weight: 700;
+            opacity: 0.95;
         }
 
-        h1 {
-            font-weight: 300;
-            font-size: 1.25rem;
-            letter-spacing: 0.1em;
+        .brand-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .text {
+            font-weight: 800;
             margin: 0;
-            color: #888;
+            font-size: clamp(28px, 7vw, 56px);
+            line-height: 1;
+            background: linear-gradient(135deg, var(--text-main), var(--text-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 30px var(--shadow-color);
+            text-align: center;
         }
 
-        span.highlight {
-            color: var(--accent);
+        #clock {
+            font-size: clamp(20px, 5vw, 36px);
             font-weight: 600;
+            margin: 0;
+            text-align: center;
         }
 
-        /* Transition state when code is typed */
-        .loading {
-            opacity: 0;
-            transform: translateY(-20px);
+        #day-of-week {
+            font-size: 14px;
+            margin-bottom: 6px;
+            opacity: 0.95;
         }
 
-        #terminal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: black;
+        .pills {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            max-width: 760px;
+        }
+
+        .info-pill {
+            font-size: 14px;
+            padding: 10px 18px;
+            border-radius: 999px;
+            background: var(--card-bg);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--card-border);
+            max-width: 100%;
+            text-align: center;
+        }
+
+        #fun-fact {
+            font-style: italic;
+            opacity: 0.95;
+        }
+
+        /* Combined pill styles */
+        .combined-pill {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            max-width: 980px;
+            padding: 12px 18px;
+            border-radius: 18px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(0, 255, 255, 0.02));
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 28px var(--shadow-color);
+            text-align: left;
+        }
+
+        .combined-left {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 120px;
+        }
+
+        .combined-left .greeting {
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-accent);
+            margin: 0;
+        }
+
+        .combined-left .small-sub {
+            font-size: 12px;
+            opacity: 0.85;
+            margin: 0;
+        }
+
+        .combined-center {
+            flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-            font-family: monospace;
-            font-size: 12px;
-            letter-spacing: 1px;
-            color: #333;
+        }
+
+        .title-pill {
+            padding: 8px 18px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, rgba(0, 255, 255, 0.06), rgba(0, 123, 255, 0.04));
+            border: 1px solid rgba(0, 255, 255, 0.08);
+            font-weight: 800;
+            font-size: clamp(18px, 4vw, 32px);
+            color: var(--text-main);
+        }
+
+        .combined-right {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 180px;
+            align-items: flex-end;
+        }
+
+        .weather-mini {
+            font-size: 13px;
+            font-weight: 700;
+            opacity: 0.95;
+            display: block;
+        }
+
+        /* --- Search Bar --- */
+        #search-container {
+            width: 100%;
+            max-width: 820px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .search-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 999px;
+            padding: 10px;
+            transition: box-shadow .2s ease, border-color .2s ease;
+            backdrop-filter: blur(6px);
+        }
+
+        .search-wrapper:focus-within {
+            border-color: var(--text-accent);
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .selected-engine {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+        }
+
+        .engine-list {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 8px;
+            width: 160px;
+            box-shadow: 0 6px 22px var(--shadow-color);
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .engine-list.active {
+            display: flex;
+        }
+
+        .engine-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--text-main);
+            transition: background .12s ease;
+        }
+
+        input#url {
+            flex: 1;
+            font-size: 20px;
+            height: 52px;
+            background: transparent;
+            color: var(--text-main);
+            border: none;
+            padding: 0 18px;
+            outline: none;
+            min-width: 0;
+        }
+
+        .redirect-button {
+            background: var(--text-accent);
+            color: #000;
+            border: none;
+            padding: 12px 22px;
+            height: 52px;
+            border-radius: 999px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform .12s ease;
+            white-space: nowrap;
+            font-size: 16px;
+        }
+
+        #suggestions {
+            list-style: none;
+            padding: 6px;
+            margin: 8px 0 0 0;
+            background: var(--suggest-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            position: absolute;
+            width: 100%;
+            overflow: hidden;
+            display: none;
+            text-align: left;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+        #suggestions.active {
+            display: block;
+        }
+
+        /* --- Cards --- */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--glass-border-radius);
+            padding: 18px;
+            width: 100%;
+            margin-bottom: 8px;
+            box-shadow: 0 8px 28px var(--shadow-color);
+            text-align: left;
+        }
+
+        .section-title {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: var(--text-accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .quick-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* --- Bookmarks --- */
+        .bookmark-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 12px 16px;
+            border-radius: 12px;
+            transition: transform .12s ease, border-color .12s ease;
+            border: 1px solid transparent;
+        }
+
+        .bookmark-wrapper:hover {
+            transform: translateY(-3px);
+            border-color: var(--text-accent);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .bookmark-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: none;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            padding: 0;
+        }
+
+        .nav-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        /* --- History --- */
+        .history-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-main);
+            opacity: 0.85;
+            text-decoration: none;
+            font-size: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .history-item:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        #bookmark-form {
+            display: none;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        #bookmark-form input {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 0;
+            outline: none;
+            font-size: 16px;
+        }
+
+        #bg-modal,
+        #html-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 22px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 900px;
+            text-align: left;
+            border: 1px solid var(--text-accent);
+            color: var(--text-main);
+            max-height: 80vh;
+            overflow: auto;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        pre.html-source {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: rgba(0, 0, 0, 0.06);
+            padding: 12px;
+            border-radius: 8px;
+            max-height: 60vh;
+            overflow: auto;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        @media (max-width:640px) {
+            .top-bar {
+                height: calc(var(--topbar-height));
+                gap: 8px;
+                top: 6px;
+            }
+
+            body {
+                padding-top: calc(var(--topbar-height) + 12px);
+            }
+
+            .greeting {
+                font-size: 11px;
+            }
+
+            .engine-list {
+                left: auto;
+                right: 0;
+                width: 160px;
+            }
+
+            .search-wrapper {
+                gap: 8px;
+                padding: 8px;
+            }
+
+            .selected-engine {
+                width: 44px;
+                height: 44px;
+            }
+
+            .redirect-button {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+
+            .info-pill {
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+
+            .card {
+                padding: 14px;
+            }
+
+            .datetime-pill {
+                min-width: auto;
+                padding: 8px 10px;
+            }
+
+            .bookmark-wrapper {
+                padding: 10px 12px;
+            }
+
+            .bookmark-btn {
+                font-size: 14px;
+                gap: 10px;
+            }
+
+            .history-item {
+                font-size: 13px;
+                padding: 8px;
+            }
+
+            .combined-pill {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .combined-right {
+                align-items: center;
+                min-width: auto;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition: none !important;
+                animation: none !important;
+            }
         }
     </style>
+
 </head>
+
 <body>
 
-    <div id="main-ui" class="container">
-        <div class="status-pill">Loading error</div>
-        <h1>Jumpman64 is <span class="highlight">discontinued</span> :(</h1>
+    <div class="top-bar" role="toolbar" aria-label="Top controls">
+        <button class="icon-btn" onclick="toggleTheme()" title="Toggle Theme" aria-label="Toggle Theme">🔆</button>
+        <button class="icon-btn" onclick="openBgSettings()" title="Change Wallpaper" aria-label="Change Wallpaper">🖼️</button>
+
+        <!-- New: Bug Report and Requests buttons -->
+        <a class="icon-btn" href="https://forms.gle/fjTkVHhx3MG8RuzYA" target="_blank" rel="noopener noreferrer" title="Bug Report" aria-label="Bug Report">
+            <i class="fas fa-bug fa-lg" aria-hidden="true"></i>
+        </a>
+
+        <a class="icon-btn" href="https://forms.gle/Kme3GCtcecKgu6dV7" target="_blank" rel="noopener noreferrer" title="Requests" aria-label="Requests">
+            <i class="fas fa-envelope fa-lg" aria-hidden="true"></i>
+        </a>
     </div>
 
-    <div id="terminal-overlay">Loading...</div>
+    <main class="page" id="page" role="main">
+        <div class="brand-row" aria-hidden="false">
+            <!-- Single combined pill containing greeting, title, time/date, and weather -->
+            <div class="combined-pill" id="combined-pill" role="region" aria-label="Status">
+                <div class="combined-left" aria-hidden="false">
+                    <div class="greeting" id="greeting">WELCOME</div>
+                </div>
+
+                <div class="combined-center" aria-hidden="false">
+                    <div class="title-pill" id="title-pill">Jumpman64 Web view v1.5</div>
+                </div>
+
+                <div class="combined-right" aria-hidden="false">
+                    <div id="clock">00:00:00</div>
+                    <div id="day-of-week">...</div>
+                    <div id="weather" class="weather-mini">Loading Weather...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pills">
+            <!-- existing fun fact -->
+            <div class="info-pill" id="fun-fact" style="background: rgba(255,165,0,0.06); border-color: rgba(255,165,0,0.18);">Fetching daily fact...</div>
+
+            <!-- new pill: random line from verynice.txt -->
+            <div class="info-pill" id="verynice" style="background: rgba(0,255,255,0.04); border-color: rgba(0,255,255,0.08);">Loading surprise...</div>
+
+            <div class="info-pill" id="yourmom" style="background: rgba(255,165,0,0.06); border-color: rgba(255,165,0,0.18);">⚠️ Please note that we don’t track you, but all of your internet traffic goes directly to IT. So please don’t visit non school appropriate sites, you know what I mean. Also, some websites (like Twitch) might not work because they are blocked by the Google Admin Console. Also, if you paid for this, you got finessed/scammed, as this webview exploit is free to use and open-sourced, you might want a refund. </div>
+        </div>
+
+        <div id="search-container" aria-label="Search">
+            <div class="search-wrapper" role="search">
+                <div class="engine-dropdown" id="engine-wrapper">
+                    <div class="selected-engine" id="selected-engine" onclick="toggleEngineMenu()" tabindex="0" aria-haspopup="true" aria-expanded="false" title="Choose search engine">
+                        <img id="current-engine-icon" src="https://www.google.com/favicon.ico" alt="Engine">
+                    </div>
+
+                    <div class="engine-list" id="engine-menu" role="menu" aria-hidden="true">
+                        <div class="engine-option" role="menuitem" tabindex="0" onclick="setEngine('google','https://www.google.com/favicon.ico')">
+                            <img src="https://www.google.com/favicon.ico" alt=""> Google
+                        </div>
+                        <div class="engine-option" role="menuitem" tabindex="0" onclick="setEngine('duckduckgo','https://duckduckgo.com/favicon.ico')">
+                            <img src="https://duckduckgo.com/favicon.ico" alt=""> DuckDuckGo
+                        </div>
+                        <div class="engine-option" role="menuitem" tabindex="0" onclick="setEngine('bing','https://www.bing.com/favicon.ico')">
+                            <img src="https://www.bing.com/favicon.ico" alt=""> Bing
+                        </div>
+                    </div>
+                </div>
+
+                <input type="text" id="url" placeholder="Search web or type URL..." autocomplete="off" aria-label="Search or URL" />
+                <button class="icon-btn" id="add-bookmark-current" title="Add bookmark from input (Ctrl+D)" aria-label="Add bookmark from input" onclick="openAddBookmarkFromInput()">⭐</button>
+                <button class="redirect-button" onclick="onGoClick()" aria-label="Go">Go</button>
+            </div>
+
+            <ul id="suggestions" aria-label="Suggestions" role="listbox"></ul>
+        </div>
+
+        <section class="card" aria-labelledby="bookmarks-title">
+            <div class="section-title">
+                <span id="bookmarks-title">Bookmarks</span>
+                <button id="bookmark-toggle-btn" onclick="toggleBookmarkForm()" aria-expanded="false" style="background:none; border:1px solid var(--text-accent); color:var(--text-accent); border-radius:50%; width:28px; height:28px; cursor:pointer;">+</button>
+            </div>
+
+            <div class="quick-links" id="quick-links" aria-live="polite"></div>
+
+            <div id="bookmark-form">
+                <input type="text" id="bm-name" placeholder="Name" aria-label="Bookmark name" />
+                <input type="text" id="bm-url" placeholder="URL" aria-label="Bookmark URL" />
+                <button onclick="addBookmark()" style="background:var(--text-accent); border:none; padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">Add</button>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="history-title" id="history-section">
+            <div class="section-title">
+                <span id="history-title">History</span>
+                <button onclick="clearHistory()" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:13px;">Clear All</button>
+            </div>
+
+            <div id="recent-links" class="history-list" aria-live="polite"></div>
+        </section>
+    </main>
+
+    <!-- background modal -->
+    <div id="bg-modal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-content" role="document">
+            <h3 style="margin:0 0 8px 0">Set Wallpaper</h3>
+            <input type="text" id="bg-url-input" placeholder="https://example.com/image.jpg" aria-label="Wallpaper URL" />
+            <div style="display:flex; gap:8px; justify-content:center;">
+                <button class="redirect-button" onclick="saveBackground()">Save</button>
+                <button class="icon-btn" onclick="closeBgSettings()" style="background:none; border:1px solid var(--card-border); color:var(--text-main);">Cancel</button>
+            </div>
+            <button style="background:none; border:none; color:#ff6b6b; cursor:pointer; margin-top:12px; display:block; width:100%" onclick="resetBackground()">Reset to Default</button>
+        </div>
+    </div>
+
+    <!-- html viewer modal (hidden) -->
+    <div id="html-modal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-content" role="document">
+            <h3 id="html-modal-title" style="margin:0 0 8px 0">Page HTML</h3>
+            <div id="html-modal-info" style="margin-bottom:8px; color:rgba(255,255,255,0.8); font-size:13px;"></div>
+            <pre id="html-content" class="html-source" aria-live="polite">Loading...</pre>
+            <div class="modal-actions">
+                <button class="redirect-button" onclick="closeHtmlModal()">Close</button>
+                <button class="icon-btn" onclick="copyHtml()" title="Copy HTML">📋</button>
+                <a id="open-original" class="redirect-button" style="text-decoration:none; display:none;" target="_blank" rel="noopener noreferrer">Open Original</a>
+            </div>
+        </div>
+    </div>
 
     <script>
-        let buffer = "";
-        const secret = "jumpman64";
-        // Replace this with your actual GitHub Raw link
-        const githubUrl = "https://raw.githubusercontent.com/code-andrewy/chicken123/refs/heads/main/yourmom.html";
+        /* combined-pill version — keeps previous functionality but shows greeting/title/clock/weather all in one pill.
+           Timezone is forced to America/New_York for display.
+        */
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key.length === 1) {
-                buffer += e.key.toLowerCase();
-                buffer = buffer.slice(-secret.length);
+        const STORAGE_KEY = 'jumpman_bms_v4';
+        const HISTORY_KEY = 'jumpman_hist_v4';
+        const PREF_KEY = 'jumpman_pref_v4';
+        const HTML_PREFIX = 'jumpman_html_';
+        const ALTON_COORD = {
+            lat: 43.4523,
+            lon: -71.2176
+        };
 
-                if (buffer === secret) {
-                    unlock();
-                }
-            }
-        });
+        let currentEngine = 'google';
 
-        async function unlock() {
-            const ui = document.getElementById('main-ui');
-            const overlay = document.getElementById('terminal-overlay');
-
-            // Start visual transition
-            ui.classList.add('loading');
-            setTimeout(() => overlay.style.opacity = "1", 300);
-
+        function safeJSONParse(s, fallback) {
             try {
-                const response = await fetch(githubUrl);
-                if (!response.ok) throw new Error();
-                const content = await response.text();
-
-                // Smooth handoff to new content
-                setTimeout(() => {
-                    document.open();
-                    document.write(content);
-                    document.close();
-                }, 1200);
-            } catch (err) {
-                overlay.innerText = "CONNECTION_ERROR";
-                setTimeout(() => location.reload(), 1500);
+                if (typeof s !== 'string') return fallback;
+                const v = JSON.parse(s);
+                return v === null ? fallback : v;
+            } catch {
+                return fallback;
             }
         }
+
+        function keyFromUrl(url) {
+            try {
+                // make base64 safe for unicode
+                const enc = typeof url === 'string' ? unescape(encodeURIComponent(url)) : String(url);
+                return HTML_PREFIX + btoa(enc).replace(/=+$/, '');
+            } catch {
+                return HTML_PREFIX + encodeURIComponent(url).slice(0, 200);
+            }
+        }
+
+        function getHostnameLabel(url) {
+            try {
+                return new URL(url).hostname.replace(/^www\./, '');
+            } catch {
+                return String(url).slice(0, 40);
+            }
+        }
+
+        /* Init */
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPreferences();
+            updateTime();
+            setInterval(updateTime, 1000);
+            fetchWeather();
+            fetchFunFact();
+            fetchRandomLine();
+            loadBookmarks();
+            renderHistory();
+            bindUIShortcuts();
+            enhanceAccessibility();
+        });
+        window.addEventListener('pageshow', () => {
+            renderHistory();
+        });
+
+        /* Engine UI */
+        function toggleEngineMenu() {
+            const menu = document.getElementById('engine-menu');
+            const sel = document.getElementById('selected-engine');
+            if (!menu || !sel) return;
+            const active = menu.classList.toggle('active');
+            menu.setAttribute('aria-hidden', (!active).toString());
+            sel.setAttribute('aria-expanded', active.toString());
+            if (active) menu.querySelector('.engine-option')?.focus();
+        }
+
+        function setEngine(name, iconUrl) {
+            currentEngine = name || 'google';
+            const icon = document.getElementById('current-engine-icon');
+            if (icon && iconUrl) {
+                icon.src = iconUrl;
+                icon.alt = name;
+            }
+            document.getElementById('engine-menu')?.classList.remove('active');
+            document.getElementById('selected-engine')?.setAttribute('aria-expanded', 'false');
+            document.getElementById('url')?.focus();
+            savePref('engine', currentEngine);
+        }
+
+        /* Keyboard & outside click handling */
+        function bindUIShortcuts() {
+            document.addEventListener('click', (e) => {
+                const engineWrapper = document.getElementById('engine-wrapper');
+                const engineMenu = document.getElementById('engine-menu');
+                const searchContainer = document.getElementById('search-container');
+                const suggestions = document.getElementById('suggestions');
+
+                if (engineWrapper && engineMenu && !engineWrapper.contains(e.target)) {
+                    engineMenu.classList.remove('active');
+                    engineMenu.setAttribute('aria-hidden', 'true');
+                    document.getElementById('selected-engine')?.setAttribute('aria-expanded', 'false');
+                }
+                if (searchContainer && suggestions && !searchContainer.contains(e.target)) {
+                    suggestions.classList.remove('active');
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    document.getElementById('engine-menu')?.classList.remove('active');
+                    document.getElementById('suggestions')?.classList.remove('active');
+                    closeBgSettings();
+                    closeHtmlModal();
+                }
+
+                // Ctrl+D -> quick add bookmark from current input
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+                    e.preventDefault();
+                    openAddBookmarkFromInput();
+                }
+            });
+        }
+
+        function enhanceAccessibility() {
+            document.querySelectorAll('.engine-option').forEach(el => {
+                el.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter' || ev.key === ' ') {
+                        ev.preventDefault();
+                        el.click();
+                    }
+                });
+            });
+            const sel = document.getElementById('selected-engine');
+            if (sel) {
+                sel.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter' || ev.key === ' ') {
+                        ev.preventDefault();
+                        toggleEngineMenu();
+                    }
+                });
+            }
+        }
+
+        /* Fetch helpers: fetch with timeout + public proxy fallback */
+        async function fetchWithTimeout(url, timeoutMs = 2500) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors',
+                    signal: controller.signal,
+                    cache: 'no-store'
+                });
+                if (!res.ok) throw new Error('status ' + res.status);
+                return await res.text();
+            } finally {
+                clearTimeout(id);
+            }
+        }
+
+        async function fetchWithProxyFallback(url, timeoutMs = 4000) {
+            try {
+                return await fetchWithTimeout(url, timeoutMs);
+            } catch (err) {
+                // fallback to AllOrigins
+                const proxy = 'https://api.allorigins.win/raw?url=';
+                return await fetchWithTimeout(proxy + encodeURIComponent(url), timeoutMs);
+            }
+        }
+
+        /* Save HTML to localStorage and write small cookie referencing the key */
+        function saveHtmlToStorage(url, html) {
+            try {
+                const key = keyFromUrl(url);
+                localStorage.setItem(key, html);
+                document.cookie = `jumpman_html_key=${encodeURIComponent(key)}; path=/; max-age=${60*60*24*365}; SameSite=Lax`;
+                return key;
+            } catch (err) {
+                console.warn('saveHtmlToStorage failed', err);
+                return null;
+            }
+        }
+
+        /* Main Go handler */
+        async function onGoClick() {
+            const input = document.getElementById('url');
+            if (!input) return;
+            const raw = input.value.trim();
+            if (!raw) return;
+
+            const domainLike = /^(https?:\/\/)?([\w-]+\.)+[\w]{2,}(\/.*)?$/i;
+            if (domainLike.test(raw)) {
+                const target = raw.startsWith('http') ? raw : 'https://' + raw;
+                const label = getHostnameLabel(target);
+                let htmlKey = null;
+                try {
+                    const text = await fetchWithProxyFallback(target, 3000).catch(() => null);
+                    if (text) htmlKey = saveHtmlToStorage(target, text);
+                } catch (err) {
+                    console.warn('Fetch before navigate failed', err);
+                }
+                saveHistory(target, label, htmlKey);
+                window.location.assign(target);
+            } else {
+                const engines = {
+                    google: 'https://www.google.com/search?q=',
+                    duckduckgo: 'https://duckduckgo.com/?q=',
+                    bing: 'https://www.bing.com/search?q='
+                };
+                const targetSearch = (engines[currentEngine] || engines.google) + encodeURIComponent(raw);
+                saveHistory(targetSearch, raw, null);
+                window.location.assign(targetSearch);
+            }
+        }
+
+        /* Suggestions (Wikipedia) */
+        (function bindSearchSuggestions() {
+            const searchInput = document.getElementById('url');
+            const suggestions = document.getElementById('suggestions');
+            if (!searchInput || !suggestions) return;
+            let controller = null;
+            searchInput.addEventListener('input', async (e) => {
+                const q = e.target.value.trim();
+                if (!q) {
+                    suggestions.classList.remove('active');
+                    suggestions.innerHTML = '';
+                    return;
+                }
+                if (controller) controller.abort();
+                controller = new AbortController();
+                try {
+                    const res = await fetch(`https://en.wikipedia.org/w/api.php?origin=*&action=opensearch&search=${encodeURIComponent(q)}&limit=6&format=json`, {
+                        signal: controller.signal
+                    });
+                    const data = await res.json();
+                    suggestions.innerHTML = '';
+                    if (Array.isArray(data) && data[1] && data[1].length) {
+                        suggestions.classList.add('active');
+                        data[1].forEach(title => {
+                            const li = document.createElement('li');
+                            li.textContent = title;
+                            li.tabIndex = 0;
+                            li.setAttribute('role', 'option');
+                            li.onclick = () => {
+                                searchInput.value = title;
+                                suggestions.classList.remove('active');
+                                onGoClick();
+                            };
+                            li.onkeydown = (ev) => {
+                                if (ev.key === 'Enter') {
+                                    searchInput.value = title;
+                                    suggestions.classList.remove('active');
+                                    onGoClick();
+                                }
+                            };
+                            suggestions.appendChild(li);
+                        });
+                    } else suggestions.classList.remove('active');
+                } catch (err) {
+                    suggestions.classList.remove('active');
+                    suggestions.innerHTML = '';
+                } finally {
+                    controller = null;
+                }
+            });
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') onGoClick();
+            });
+        })();
+
+        /* Preferences & theme */
+        function loadPreferences() {
+            const prefs = safeJSONParse(localStorage.getItem(PREF_KEY), {
+                theme: 'dark',
+                bg: null,
+                engine: 'google'
+            });
+            document.body.setAttribute('data-theme', prefs.theme || 'dark');
+            if (prefs.bg) document.body.style.backgroundImage = `url('${prefs.bg}')`;
+            if (prefs.engine) {
+                currentEngine = prefs.engine;
+                const iconMap = {
+                    google: 'https://www.google.com/favicon.ico',
+                    duckduckgo: 'https://duckduckgo.com/favicon.ico',
+                    bing: 'https://www.bing.com/favicon.ico'
+                };
+                const icon = document.getElementById('current-engine-icon');
+                if (icon) {
+                    icon.src = iconMap[prefs.engine] || iconMap.google;
+                    icon.alt = prefs.engine;
+                }
+            }
+        }
+
+        function toggleTheme() {
+            const current = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', current);
+            savePref('theme', current);
+        }
+
+        function savePref(key, val) {
+            const prefs = safeJSONParse(localStorage.getItem(PREF_KEY), {});
+            prefs[key] = val;
+            try {
+                localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
+            } catch {}
+        }
+
+        function openBgSettings() {
+            const modal = document.getElementById('bg-modal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+            document.getElementById('bg-url-input')?.focus();
+        }
+
+        function closeBgSettings() {
+            const modal = document.getElementById('bg-modal');
+            if (!modal) return;
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function saveBackground() {
+            const input = document.getElementById('bg-url-input');
+            if (!input) return;
+            const url = input.value.trim();
+            if (url) {
+                document.body.style.backgroundImage = `url('${url}')`;
+                savePref('bg', url);
+                closeBgSettings();
+            }
+        }
+
+        function resetBackground() {
+            document.body.style.backgroundImage = '';
+            savePref('bg', null);
+            closeBgSettings();
+        }
+
+        /* Time / weather / fun fact */
+        function updateTime() {
+            const now = new Date();
+            const clock = document.getElementById('clock');
+            const day = document.getElementById('day-of-week');
+            const greet = document.getElementById('greeting');
+            try {
+                const timeStr = now.toLocaleTimeString([], {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZone: 'America/New_York'
+                });
+                const dateStr = now.toLocaleDateString([], {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    timeZone: 'America/New_York'
+                });
+                if (clock) clock.textContent = timeStr;
+                if (day) day.textContent = dateStr;
+                if (greet) {
+                    const hrs = new Date().toLocaleString('en-US', {
+                        hour: 'numeric',
+                        hour12: false,
+                        timeZone: 'America/New_York'
+                    });
+                    const hrsNum = parseInt(hrs, 10);
+                    greet.textContent = (hrsNum < 12) ? "Good morning☀️" : (hrsNum < 17) ? "Good Afternoon🌤️" : "Good Evening🌇";
+                }
+            } catch (err) {
+                if (clock) clock.textContent = now.toLocaleTimeString();
+                if (day) day.textContent = now.toLocaleDateString();
+            }
+        }
+
+        async function fetchFunFact() {
+            const out = document.getElementById('fun-fact');
+            try {
+                const res = await fetch('https://uselessfacts.jsph.pl/api/v2/facts/today');
+                if (!res.ok) throw new Error('bad response');
+                const data = await res.json();
+                if (out) out.textContent = "💡 " + (data.text || 'Fact unavailable');
+            } catch {
+                if (out) out.textContent = "💡 Fact unavailable";
+            }
+        }
+
+        async function fetchWeather() {
+            const out = document.getElementById('weather');
+            try {
+                const pRes = await fetch(`https://api.weather.gov/points/${ALTON_COORD.lat},${ALTON_COORD.lon}`);
+                if (!pRes.ok) throw new Error('points fetch failed');
+                const pdata = await pRes.json();
+                const forecastUrl = pdata?.properties?.forecast;
+                if (!forecastUrl) throw new Error('no forecast URL');
+                const fRes = await fetch(forecastUrl);
+                if (!fRes.ok) throw new Error('forecast fetch failed');
+                const fData = await fRes.json();
+                const cur = fData?.properties?.periods?.[0];
+                if (!cur) throw new Error('no period data');
+                if (out) out.innerHTML = `Alton, NH: <b>${cur.temperature}°${cur.temperatureUnit}</b> ┃ ${cur.shortForecast}`;
+            } catch (err) {
+                if (out) out.textContent = 'Weather unavailable';
+            }
+        }
+
+        /* Bookmarks & History */
+        function getFavicon(url) {
+            try {
+                return `https://www.google.com/s2/favicons?sz=64&domain=${new URL(url).hostname}`;
+            } catch {
+                return '';
+            }
+        }
+
+        function defaultBookmarks() {
+            return [
+                { name: "YouTube", url: "https://youtube.com" },
+                { name: "CrazyGames", url: "https://www.crazygames.com/" },
+                { name: "TikTok", url: "https://www.tiktok.com/" },
+                { name: "Instagram", url: "https://www.instagram.com/" },
+                { name: "Discord", url: "https://discord.com/app" },
+                { name: "Coolmath Games", url: "https://www.coolmathgames.com/" },
+                { name: "Poki", url: "https://poki.com/" },
+                { name: "Neal.fun", url: "https://neal.fun/" },
+                { name: "Snapchat", url: "https://www.snapchat.com/" },
+                { name: "GitHub", url: "https://github.com/" }
+            ];
+        }
+
+        function loadBookmarks() {
+            const container = document.getElementById('quick-links');
+            if (!container) return;
+            let bms = safeJSONParse(localStorage.getItem(STORAGE_KEY), null);
+            if (!Array.isArray(bms) || bms.length === 0) {
+                bms = defaultBookmarks();
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(bms));
+                } catch {}
+            }
+            container.innerHTML = '';
+            bms.forEach((bm, i) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'bookmark-wrapper';
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'bookmark-btn';
+
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const url = bm.url;
+                    const title = bm.name || bm.url;
+                    const key = (() => {
+                        try {
+                            const k = keyFromUrl(url);
+                            return localStorage.getItem(k) ? k : null;
+                        } catch {
+                            return null;
+                        }
+                    })();
+                    saveHistory(url, title, key);
+                    window.location.assign(url);
+                };
+
+                const img = document.createElement('img');
+                img.src = getFavicon(bm.url) || '';
+                img.className = 'nav-icon';
+                img.alt = bm.name || '';
+
+                btn.appendChild(img);
+                btn.appendChild(document.createTextNode(bm.name || bm.url || 'link'));
+
+                const del = document.createElement('button');
+                del.textContent = '×';
+                del.style.cssText = 'margin-left:8px; cursor:pointer; opacity:0.45; background:none; border:none; color:var(--text-main);';
+                del.title = 'Delete bookmark';
+                del.setAttribute('aria-label', `Delete ${bm.name || 'bookmark'}`);
+                del.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteBm(i);
+                };
+
+                wrap.appendChild(btn);
+                wrap.appendChild(del);
+                container.appendChild(wrap);
+            });
+        }
+
+        function deleteBm(i) {
+            let bms = safeJSONParse(localStorage.getItem(STORAGE_KEY), []);
+            if (i < 0 || i >= bms.length) return;
+            bms.splice(i, 1);
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(bms));
+            } catch {}
+            loadBookmarks();
+        }
+
+        async function addBookmark() {
+            const nameEl = document.getElementById('bm-name');
+            const urlEl = document.getElementById('bm-url');
+            if (!nameEl || !urlEl) return;
+            const name = nameEl.value.trim();
+            let url = urlEl.value.trim();
+            if (!name || !url) return;
+            if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+            let bms = safeJSONParse(localStorage.getItem(STORAGE_KEY), []);
+            if (!Array.isArray(bms)) bms = [];
+            // add new bookmarks to the front so they're easy to access
+            bms.unshift({ name, url });
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(bms));
+            } catch {}
+
+            loadBookmarks();
+            toggleBookmarkForm(false); // close
+            nameEl.value = '';
+            urlEl.value = '';
+
+            let htmlKey = null;
+            try {
+                const text = await fetchWithProxyFallback(url, 3000).catch(() => null);
+                if (text) htmlKey = saveHtmlToStorage(url, text);
+            } catch (err) {
+                console.warn('bookmark HTML fetch failed', err);
+            }
+            saveHistory(url, name, htmlKey);
+        }
+
+        function toggleBookmarkForm(forceToggle) {
+            const f = document.getElementById('bookmark-form');
+            const btn = document.getElementById('bookmark-toggle-btn');
+            if (!f) return;
+            // if forceToggle === false -> close, === true -> open. otherwise toggle
+            let open;
+            if (forceToggle === true) open = true;
+            else if (forceToggle === false) open = false;
+            else open = f.style.display !== 'flex';
+            if (!open) {
+                f.style.display = 'none';
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+            } else {
+                f.style.display = 'flex';
+                f.style.alignItems = 'center';
+                if (btn) btn.setAttribute('aria-expanded', 'true');
+                // focus the name input for quick typing
+                document.getElementById('bm-name')?.focus();
+            }
+        }
+
+        function openAddBookmark(name, url) {
+            const f = document.getElementById('bookmark-form');
+            const nameEl = document.getElementById('bm-name');
+            const urlEl = document.getElementById('bm-url');
+            if (!f || !nameEl || !urlEl) return;
+            if (name) nameEl.value = name;
+            if (url) urlEl.value = url;
+            toggleBookmarkForm(true);
+            // focus url if name is filled, otherwise name
+            if (!nameEl.value) nameEl.focus();
+            else urlEl.focus();
+        }
+
+        function openAddBookmarkFromInput() {
+            const input = document.getElementById('url');
+            if (!input) return;
+            const raw = input.value.trim();
+            if (!raw) {
+                // populate with empty values but open form
+                openAddBookmark('', '');
+                return;
+            }
+            const domainLike = /^(https?:\/\/)?([\w-]+\.)+[\w]{2,}(\/.*)?$/i;
+            const url = domainLike.test(raw) ? (raw.startsWith('http') ? raw : 'https://' + raw) : raw;
+            const name = domainLike.test(raw) ? getHostnameLabel(url) : raw;
+            openAddBookmark(name, url);
+        }
+
+        function showStoredHtmlForUrl(url, title) {
+            const key = keyFromUrl(url);
+            const html = localStorage.getItem(key);
+            const modal = document.getElementById('html-modal');
+            const pre = document.getElementById('html-content');
+            const info = document.getElementById('html-modal-info');
+            const htitle = document.getElementById('html-modal-title');
+            const openLink = document.getElementById('open-original');
+
+            if (!modal || !pre || !info || !htitle) return;
+            htitle.textContent = `Saved HTML — ${title || url}`;
+            if (html) {
+                info.textContent = `Loaded from localStorage (${(html.length||0).toLocaleString()} bytes). Displayed as plain text (safe).`;
+                pre.textContent = html;
+                openLink.style.display = 'inline-block';
+                openLink.href = url;
+            } else {
+                info.textContent = 'No saved HTML for that URL.';
+                pre.textContent = 'No HTML saved.';
+                openLink.style.display = 'inline-block';
+                openLink.href = url;
+            }
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeHtmlModal() {
+            const modal = document.getElementById('html-modal');
+            if (!modal) return;
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            document.getElementById('url')?.focus();
+        }
+
+        function copyHtml() {
+            const pre = document.getElementById('html-content');
+            if (!pre) return;
+            const text = pre.textContent || '';
+            navigator.clipboard?.writeText(text).then(() => alert('HTML copied to clipboard'), () => alert('Copy failed'));
+        }
+
+        function saveHistory(url, title, htmlKey = null) {
+            if (!url) return;
+            const history = safeJSONParse(localStorage.getItem(HISTORY_KEY), []);
+            const entry = {
+                url,
+                title: title || getHostnameLabel(url),
+                ts: Date.now(),
+                htmlKey: htmlKey || null
+            };
+            const newHistory = [entry, ...history.filter(h => h.url !== url)].slice(0, 50);
+            try {
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+            } catch {}
+            if (htmlKey) {
+                document.cookie = `jumpman_last_html=${encodeURIComponent(htmlKey)}; path=/; max-age=${60*60*24*365}; SameSite=Lax`;
+            } else {
+                try {
+                    document.cookie = `jumpman_last_url=${encodeURIComponent(url)}; path=/; max-age=${60*60*24*365}; SameSite=Lax`;
+                } catch {}
+            }
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('recent-links');
+            const section = document.getElementById('history-section');
+            if (!container || !section) return;
+            const history = safeJSONParse(localStorage.getItem(HISTORY_KEY), []);
+            if (!history || history.length === 0) {
+                // hide the whole history section if there's nothing
+                section.style.display = 'none';
+                container.innerHTML = '';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = '';
+            history.forEach(entry => {
+                const a = document.createElement('a');
+                a.className = 'history-item';
+                a.href = entry.url;
+                a.target = '_self';
+                a.rel = 'noopener noreferrer';
+                a.title = entry.title;
+
+                const img = document.createElement('img');
+                img.src = getFavicon(entry.url) || '';
+                img.className = 'nav-icon';
+                img.alt = '';
+
+                const labelText = (entry.title || getHostnameLabel(entry.url));
+                const truncated = labelText.length > 30 ? (labelText.slice(0, 28) + '...') : labelText;
+                const label = document.createTextNode(" " + truncated);
+
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    saveHistory(entry.url, entry.title, entry.htmlKey || null);
+                    window.location.assign(entry.url);
+                });
+
+                a.appendChild(img);
+                a.appendChild(label);
+                container.appendChild(a);
+            });
+        }
+
+        function clearHistory() {
+            if (!confirm('Clear browsing history? This cannot be undone.')) return;
+            try {
+                localStorage.removeItem(HISTORY_KEY);
+            } catch {}
+            renderHistory();
+        }
+
+        /* Fetch random line from your GitHub raw file */
+        async function fetchRandomLine() {
+            const out = document.getElementById('verynice');
+            const url = 'https://raw.githubusercontent.com/code-andrewy/jumpman64beta/refs/heads/main/verynice.txt';
+            if (!out) return;
+            try {
+                const data = await fetchWithProxyFallback(url, 4000);
+                if (!data) throw new Error('No data');
+                const lines = data.split('\n').map(l => l.replace(/\r$/, '').trim()).filter(l => l.length > 0);
+                if (!lines.length) {
+                    out.textContent = 'No entries found in verynice.txt';
+                    return;
+                }
+                const randomLine = lines[Math.floor(Math.random() * lines.length)];
+                out.textContent = "✨ " + randomLine;
+            } catch (err) {
+                console.warn('fetchRandomLine failed', err);
+                out.textContent = 'Could not fetch surprise';
+            }
+        }
+
+        /* Expose functions used by inline handlers */
+        window.toggleEngineMenu = toggleEngineMenu;
+        window.setEngine = setEngine;
+        window.onGoClick = onGoClick;
+        window.toggleTheme = toggleTheme;
+        window.openBgSettings = openBgSettings;
+        window.closeBgSettings = closeBgSettings;
+        window.saveBackground = saveBackground;
+        window.resetBackground = resetBackground;
+        window.addBookmark = addBookmark;
+        window.toggleBookmarkForm = toggleBookmarkForm;
+        window.openAddBookmark = openAddBookmark;
+        window.openAddBookmarkFromInput = openAddBookmarkFromInput;
+        window.clearHistory = clearHistory;
+        window.deleteBm = deleteBm;
+        window.showStoredHtmlForUrl = showStoredHtmlForUrl;
+        window.closeHtmlModal = closeHtmlModal;
+        window.copyHtml = copyHtml;
     </script>
 </body>
+
 </html>
