@@ -79,7 +79,7 @@
             transform: translateX(-50%);
             width: 95%;
             max-width: var(--max-width);
-            height: calc(var(--topbar-height)-8px);
+            height: calc(var(--topbar-height) - 8px);
             display: flex;
             justify-content: flex-end;
             align-items: center;
@@ -634,6 +634,15 @@
         <a class="icon-btn" href="https://forms.gle/Kme3GCtcecKgu6dV7" target="_blank" rel="noopener noreferrer" title="Requests" aria-label="Requests">
             <i class="fas fa-envelope fa-lg" aria-hidden="true"></i>
         </a>
+
+        <!-- Export / Import -->
+        <button class="icon-btn" onclick="exportData()" title="Export Data" aria-label="Export Data">
+            <i class="fas fa-download" aria-hidden="true"></i>
+        </button>
+        <button class="icon-btn" onclick="document.getElementById('import-file').click()" title="Import Data" aria-label="Import Data">
+            <i class="fas fa-upload" aria-hidden="true"></i>
+        </button>
+        <input id="import-file" type="file" accept="application/json" style="display:none" onchange="handleImportFile(event)" />
     </div>
 
     <main class="page" id="page" role="main">
@@ -663,7 +672,12 @@
             <!-- new pill: random line from verynice.txt -->
             <div class="info-pill" id="verynice" style="background: rgba(0,255,255,0.04); border-color: rgba(0,255,255,0.08);">Loading surprise...</div>
 
-            <div class="info-pill" id="yourmom" style="background: rgba(255,165,0,0.06); border-color: rgba(255,165,0,0.18);">⚠️ Please note that we don’t track you, but all of your internet traffic goes directly to IT. So please don’t visit non school appropriate sites, you know what I mean. Also, some websites (like Twitch) might not work because they are blocked by the Google Admin Console. Also, if you paid for this, you got finessed/scammed, as this webview exploit is free to use and open-sourced, you might want a refund. </div>
+            <div class="info-pill" id="yourmom" style="background: rgba(255,165,0,0.06); border-color: rgba(255,165,0,0.18);">⚠️ Please note that we don’t track you, but all of your internet traffic goes directly to IT. So please don’t visit non school appropriate sites. </div>
+
+            <!-- offline detection pill -->
+            <div class="info-pill" id="offline-pill" style="display:none; background: rgba(255,80,80,0.06); border-color: rgba(255,80,80,0.18);">
+                You are offline — some features may be limited.
+            </div>
         </div>
 
         <div id="search-container" aria-label="Search">
@@ -760,6 +774,10 @@
             lon: -71.2176
         };
 
+        // Weather cache keys & TTL
+        const WEATHER_CACHE_KEY = 'jumpman_weather_cache';
+        const WEATHER_CACHE_TTL = 1000 * 60 * 15; // 15 minutes
+
         let currentEngine = 'google';
 
         function safeJSONParse(s, fallback) {
@@ -802,6 +820,7 @@
             renderHistory();
             bindUIShortcuts();
             enhanceAccessibility();
+            updateOfflineUI(); // set initial offline state
         });
         window.addEventListener('pageshow', () => {
             renderHistory();
@@ -926,7 +945,7 @@
             }
         }
 
-        /* Main Go handler */
+        /* Main Go handler — no prefetch on navigation */
         async function onGoClick() {
             const input = document.getElementById('url');
             if (!input) return;
@@ -937,14 +956,8 @@
             if (domainLike.test(raw)) {
                 const target = raw.startsWith('http') ? raw : 'https://' + raw;
                 const label = getHostnameLabel(target);
-                let htmlKey = null;
-                try {
-                    const text = await fetchWithProxyFallback(target, 3000).catch(() => null);
-                    if (text) htmlKey = saveHtmlToStorage(target, text);
-                } catch (err) {
-                    console.warn('Fetch before navigate failed', err);
-                }
-                saveHistory(target, label, htmlKey);
+                // DO NOT prefetch site HTML here — handled when adding bookmarks or viewing HTML
+                saveHistory(target, label, null);
                 window.location.assign(target);
             } else {
                 const engines = {
@@ -1132,9 +1145,26 @@
             }
         }
 
+        /* Weather with caching to avoid rate-limit / repeated calls */
         async function fetchWeather() {
             const out = document.getElementById('weather');
+            if (!out) return;
+
             try {
+                // try cache first
+                const rawCache = localStorage.getItem(WEATHER_CACHE_KEY);
+                if (rawCache) {
+                    try {
+                        const c = JSON.parse(rawCache);
+                        if (c?.ts && (Date.now() - c.ts) < WEATHER_CACHE_TTL && c?.displayText) {
+                            out.innerHTML = c.displayText;
+                            // return early to avoid extra network calls
+                            return;
+                        }
+                    } catch {}
+                }
+
+                // fetch fresh
                 const pRes = await fetch(`https://api.weather.gov/points/${ALTON_COORD.lat},${ALTON_COORD.lon}`);
                 if (!pRes.ok) throw new Error('points fetch failed');
                 const pdata = await pRes.json();
@@ -1145,8 +1175,29 @@
                 const fData = await fRes.json();
                 const cur = fData?.properties?.periods?.[0];
                 if (!cur) throw new Error('no period data');
-                if (out) out.innerHTML = `Alton, NH: <b>${cur.temperature}°${cur.temperatureUnit}</b> ┃ ${cur.shortForecast}`;
+
+                const display = `Alton, NH: <b>${cur.temperature}°${cur.temperatureUnit}</b> ┃ ${cur.shortForecast}`;
+                out.innerHTML = display;
+
+                try {
+                    localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({
+                        ts: Date.now(),
+                        displayText: display
+                    }));
+                } catch {}
             } catch (err) {
+                console.warn('fetchWeather failed', err);
+                // fallback to cache if available
+                try {
+                    const rawCache = localStorage.getItem(WEATHER_CACHE_KEY);
+                    if (rawCache) {
+                        const c = JSON.parse(rawCache);
+                        if (c?.displayText) {
+                            out.innerHTML = c.displayText + ' (cached)';
+                            return;
+                        }
+                    }
+                } catch {}
                 if (out) out.textContent = 'Weather unavailable';
             }
         }
@@ -1161,17 +1212,46 @@
         }
 
         function defaultBookmarks() {
-            return [
-                { name: "YouTube", url: "https://youtube.com" },
-                { name: "CrazyGames", url: "https://www.crazygames.com/" },
-                { name: "TikTok", url: "https://www.tiktok.com/" },
-                { name: "Instagram", url: "https://www.instagram.com/" },
-                { name: "Discord", url: "https://discord.com/app" },
-                { name: "Coolmath Games", url: "https://www.coolmathgames.com/" },
-                { name: "Poki", url: "https://poki.com/" },
-                { name: "Neal.fun", url: "https://neal.fun/" },
-                { name: "Snapchat", url: "https://www.snapchat.com/" },
-                { name: "GitHub", url: "https://github.com/" }
+            return [{
+                    name: "YouTube",
+                    url: "https://youtube.com"
+                },
+                {
+                    name: "CrazyGames",
+                    url: "https://www.crazygames.com/"
+                },
+                {
+                    name: "TikTok",
+                    url: "https://www.tiktok.com/"
+                },
+                {
+                    name: "Instagram",
+                    url: "https://www.instagram.com/"
+                },
+                {
+                    name: "Discord",
+                    url: "https://discord.com/app"
+                },
+                {
+                    name: "Coolmath Games",
+                    url: "https://www.coolmathgames.com/"
+                },
+                {
+                    name: "Poki",
+                    url: "https://poki.com/"
+                },
+                {
+                    name: "Neal.fun",
+                    url: "https://neal.fun/"
+                },
+                {
+                    name: "Snapchat",
+                    url: "https://www.snapchat.com/"
+                },
+                {
+                    name: "GitHub",
+                    url: "https://github.com/"
+                }
             ];
         }
 
@@ -1256,7 +1336,10 @@
             let bms = safeJSONParse(localStorage.getItem(STORAGE_KEY), []);
             if (!Array.isArray(bms)) bms = [];
             // add new bookmarks to the front so they're easy to access
-            bms.unshift({ name, url });
+            bms.unshift({
+                name,
+                url
+            });
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(bms));
             } catch {}
@@ -1461,6 +1544,137 @@
             }
         }
 
+        /* ----------------------
+           Offline detection UI
+           ---------------------- */
+        function updateOfflineUI() {
+            const pill = document.getElementById('offline-pill');
+            if (!pill) return;
+            if (!navigator.onLine) {
+                pill.style.display = 'block';
+            } else {
+                pill.style.display = 'none';
+            }
+        }
+        // bind events
+        window.addEventListener('online', updateOfflineUI);
+        window.addEventListener('offline', updateOfflineUI);
+
+        /* ----------------------
+           Export / Import data
+           ---------------------- */
+
+        function exportData() {
+            try {
+                const payload = {
+                    version: 1,
+                    bookmarks: safeJSONParse(localStorage.getItem(STORAGE_KEY), []),
+                    prefs: safeJSONParse(localStorage.getItem(PREF_KEY), {}),
+                    history: safeJSONParse(localStorage.getItem(HISTORY_KEY), []),
+                    weatherCache: safeJSONParse(localStorage.getItem(WEATHER_CACHE_KEY), null),
+                    // NOTE: saved HTML (localStorage keys prefixed by HTML_PREFIX) might be large; include optionally
+                };
+                const blob = new Blob([JSON.stringify(payload, null, 2)], {
+                    type: 'application/json'
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `jumpman_export_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.warn('exportData failed', err);
+                alert('Export failed.');
+            }
+        }
+
+        function handleImportFile(e) {
+            const f = e.target.files?.[0];
+            if (!f) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const obj = JSON.parse(ev.target.result);
+                    importData(obj);
+                } catch (err) {
+                    alert('Invalid JSON file.');
+                } finally {
+                    // clear the input to allow same file re-import later
+                    e.target.value = '';
+                }
+            };
+            reader.readAsText(f);
+        }
+
+        function importData(obj) {
+            if (!obj || typeof obj !== 'object') {
+                alert('Invalid import object');
+                return;
+            }
+            // Simple validation
+            const ok = 'bookmarks' in obj || 'prefs' in obj || 'history' in obj;
+            if (!ok) {
+                alert('File does not appear to be a Jumpman export.');
+                return;
+            }
+
+            // Ask user whether to merge or replace bookmarks (simple confirm)
+            try {
+                // Bookmarks
+                if (Array.isArray(obj.bookmarks)) {
+                    const existing = safeJSONParse(localStorage.getItem(STORAGE_KEY), []);
+                    if (existing.length && confirm('Replace existing bookmarks? OK = replace, Cancel = merge')) {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(obj.bookmarks));
+                    } else {
+                        // merge: keep existing then add any new (by URL)
+                        const map = new Map();
+                        existing.concat(obj.bookmarks).forEach(b => map.set(b.url, b));
+                        const merged = Array.from(map.values());
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+                    }
+                }
+
+                // Prefs
+                if (obj.prefs && typeof obj.prefs === 'object') {
+                    localStorage.setItem(PREF_KEY, JSON.stringify(obj.prefs));
+                }
+
+                // History
+                if (Array.isArray(obj.history)) {
+                    // Ask whether to replace or merge
+                    const existingHist = safeJSONParse(localStorage.getItem(HISTORY_KEY), []);
+                    if (existingHist.length && confirm('Replace existing history? OK = replace, Cancel = merge')) {
+                        localStorage.setItem(HISTORY_KEY, JSON.stringify(obj.history.slice(0, 50)));
+                    } else {
+                        // merge and dedupe by url
+                        const map = new Map();
+                        existingHist.concat(obj.history).forEach(h => map.set(h.url, h));
+                        const merged = Array.from(map.values()).slice(0, 50);
+                        localStorage.setItem(HISTORY_KEY, JSON.stringify(merged));
+                    }
+                }
+
+                // weather cache
+                if (obj.weatherCache) {
+                    localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(obj.weatherCache));
+                }
+
+                // reload UI state
+                loadPreferences();
+                loadBookmarks();
+                renderHistory();
+                fetchWeather();
+
+                alert('Import complete.');
+            } catch (err) {
+                console.warn('importData failed', err);
+                alert('Import failed.');
+            }
+        }
+
         /* Expose functions used by inline handlers */
         window.toggleEngineMenu = toggleEngineMenu;
         window.setEngine = setEngine;
@@ -1479,6 +1693,12 @@
         window.showStoredHtmlForUrl = showStoredHtmlForUrl;
         window.closeHtmlModal = closeHtmlModal;
         window.copyHtml = copyHtml;
+
+        // Export/Import & offline UI exposure
+        window.exportData = exportData;
+        window.handleImportFile = handleImportFile;
+        window.importData = importData;
+        window.updateOfflineUI = updateOfflineUI;
     </script>
 </body>
 
