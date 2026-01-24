@@ -1,237 +1,193 @@
+
 <!DOCTYPE html>
-
-
-<!-- Ultimate Game Stash file--> 
-<!-- For the regularly updating doc go to https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/ -->
-
-
-<html lang="en-us">
+<html lang="en">
 <head>
-    <title>Granny Original</title>
-    <meta charset="utf-8">
-    <meta name="robots" content="noindex, nofollow">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bubbls/granny@212c543a85b243c4a0b92211f557e760d83d2292/TemplateData/style.css">
-    <script src="https://cdn.jsdelivr.net/gh/bubbls/granny@212c543a85b243c4a0b92211f557e760d83d2292/sdk.js"></script>
-    <!-- GameMonetize SDK Entegrasyonu -->
-    <script type="text/javascript">
-        window.SDK_OPTIONS = {
-            gameId: "jp112o3o4hzgrnc7zaewjkrfk282pul8",
-            onEvent: function (a) {
-                switch (a.name) {
-                    case "SDK_GAME_PAUSE":
-                        console.log("Oyun duraklatıldı, ses kapatılıyor...");
-                        if (typeof myGameInstance !== 'undefined' && myGameInstance) {
-                            myGameInstance.SendMessage('AudioManager', 'MuteAudio');
-                        }
-                        break;
-                    case "SDK_GAME_START":
-                        console.log("Reklam bitti, oyun devam ediyor...");
-                        if (typeof myGameInstance !== 'undefined' && myGameInstance) {
-                            myGameInstance.SendMessage('AudioManager', 'UnmuteAudio');
-                        }
-                        break;
-                    case "SDK_READY":
-                        console.log("SDK hazır.");
-                        break;
-                }
-            }
-        };
-        (function (a, b, c) {
-            var d = a.getElementsByTagName(b)[0];
-            a.getElementById(c) || (a = a.createElement(b), a.id = c, a.src = "https://cdn.jsdelivr.net/gh/testamalame/sef@main/sedk.js", d.parentNode.insertBefore(a, d));
-        })(document, "script", "gamemonetize-sdk");
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jumpman64 | Access Restricted</title>
     <style>
-        body {
+        :root {
+            --accent: #ff3131;
+            --bg: #020202;
+            --panel: rgba(15, 15, 15, 0.75);
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body, html {
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg);
+            color: #fff;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             overflow: hidden;
-            background: url('https://cdn.jsdelivr.net/gh/gru6nny/ohd@main/background.png') no-repeat center center fixed;
-            background-size: cover;
         }
-        #unity-container {
-            position: absolute;
+
+        /* Video Background Blur */
+        #bg-canvas {
+            position: fixed;
+            inset: 0;
             width: 100%;
             height: 100%;
-            left: 0;
-            top: 0;
+            filter: blur(80px) brightness(0.4);
+            z-index: 0;
+            transform: scale(1.2);
         }
-        #unity-loading-bar {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 400px;
-            height: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid #ffffff;
-            border-radius: 10px;
-            display: block;
+
+        /* Scanline Overlay Effect */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            z-index: 5;
         }
-        #unity-logo {
-            position: absolute;
-            top: calc(50% - 100px);
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: auto;
+
+        /* Entry Overlay */
+        #overlay {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: pointer;
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        #unity-logo img {
-            max-width: 100%;
-            height: auto;
+
+        .enter-text {
+            font-size: 0.7rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            padding: 12px 24px;
+            border: 1px solid #333;
+            border-radius: 2px;
+            transition: 0.4s;
         }
-        #unity-progress-bar-empty {
-            width: 100%;
-            height: 100%;
+
+        #overlay:hover .enter-text {
+            border-color: #fff;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+
+        /* Content Hub */
+        .glass-panel {
             position: relative;
+            z-index: 10;
+            width: 95%;
+            max-width: 650px;
+            background: var(--panel);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.9);
         }
-        #unity-progress-bar-full {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 0%;
-            height: 100%;
-            background: #4caf50;
-            border-radius: 8px;
-            transition: width 0.3s ease;
+
+        /* Fixed Video Aspect Ratio (No Cropping) */
+        .video-box {
+            width: 100%;
+            background: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        #unity-warning {
-            position: absolute;
-            left: 50%;
-            top: 5%;
-            transform: translate(-50%);
-            background: white;
-            padding: 10px;
-            display: none;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+
+        video {
+            max-width: 100%;
+            max-height: 70vh;
+            display: block;
+            object-fit: contain; /* Prevents cropping */
+        }
+
+        /* Typography */
+        .info { text-align: left; }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent);
+            color: #000;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 2px 8px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin: 0;
+            font-weight: 300;
+            letter-spacing: -1px;
+        }
+
+        .desc {
+            color: #777;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            border-left: 1px solid var(--accent);
+            padding-left: 15px;
+        }
+
+        @media (max-width: 500px) {
+            .glass-panel { padding: 15px; }
+            h1 { font-size: 1.5rem; }
         }
     </style>
 </head>
 <body>
-    <div id="unity-container">
-        <canvas id="unity-canvas" style="position: absolute; width: 100%; height: 100%"></canvas>
-        <div id="unity-loading-bar">
-            <div id="unity-logo">
-            </div>
-            <div id="unity-progress-bar-empty">
-                <div id="unity-progress-bar-full"></div>
-            </div>
-        </div>
-        <div id="unity-warning"></div>
+
+    <div id="overlay" onclick="launch()">
+        <div class="enter-text">Please click me!</div>
     </div>
+
+    <video id="bgVideo" loop muted playsinline style="display:none;">
+        <source src="https://ia600601.us.archive.org/25/items/Sillyseal/7578375073447349559_original.ia.mp4" type="video/mp4">
+    </video>
+
+    <div class="glass-panel">
+        <div class="video-box">
+            <video id="mainVideo" loop playsinline>
+                <source src="https://ia600601.us.archive.org/25/items/Sillyseal/7578375073447349559_original.ia.mp4" type="video/mp4">
+            </video>
+        </div>
+
+        <div class="info">
+            <div class="badge">We have disable parts of sites.</div>
+            <h1>Jumpman64</h1>
+            <p class="desc">The requested url is disabled by the owner. <br>Rip Jumpman64.</p>
+            <br>Enjoy this silly seal.</p>
+        </div>
+    </div>
+
     <script>
-        async function mergeUnityWebFiles(baseUrl, filePrefix, totalParts, extension) {
-            const partUrls = [];
-            for (let i = 1; i <= totalParts; i++) {
-                partUrls.push(`${baseUrl}/${filePrefix}_part${i}.${extension}`);
-            }
-
-            const buffers = [];
-            for (let i = 0; i < totalParts; i++) {
-                const response = await fetch(partUrls[i]);
-                if (!response.ok) {
-                    throw new Error(`Failed to load part: ${partUrls[i]}`);
-                }
-                const buffer = await response.arrayBuffer();
-                buffers.push(buffer);
-
-                const progress = ((i + 1) / totalParts) * 100;
-                document.querySelector("#unity-progress-bar-full").style.width = `${progress}%`;
-            }
-
-            const totalLength = buffers.reduce((acc, buffer) => acc + buffer.byteLength, 0);
-            const combinedBuffer = new Uint8Array(totalLength);
-            let offset = 0;
-
-            buffers.forEach((buffer) => {
-                combinedBuffer.set(new Uint8Array(buffer), offset);
-                offset += buffer.byteLength;
-            });
-
-            return combinedBuffer;
+        function launch() {
+            const main = document.getElementById('mainVideo');
+            const overlay = document.getElementById('overlay');
+            
+            main.play();
+            overlay.style.opacity = '0';
+            overlay.style.transform = 'scale(1.1)';
+            
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 800);
         }
-
-        var container = document.querySelector("#unity-container");
-        var canvas = document.querySelector("#unity-canvas");
-        var loadingBar = document.querySelector("#unity-loading-bar");
-        var progressBarFull = document.querySelector("#unity-progress-bar-full");
-        var warningBanner = document.querySelector("#unity-warning");
-
-        let myGameInstance = null;
-        let isAdShown = false;
-
-        function unityShowBanner(msg, type) {
-            function updateBannerVisibility() {
-                warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-            }
-            var div = document.createElement('div');
-            div.innerHTML = msg;
-            warningBanner.appendChild(div);
-            if (type == 'error') div.style = 'background: red; padding: 10px;';
-            else {
-                if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-                setTimeout(function() {
-                    warningBanner.removeChild(div);
-                    updateBannerVisibility();
-                }, 5000);
-            }
-            updateBannerVisibility();
-        }
-
-        function showAdOnClick() {
-            if (!isAdShown && typeof sdk !== 'undefined' && typeof sdk.showBanner !== 'undefined') {
-                sdk.showBanner();
-                isAdShown = true;
-            }
-        }
-
-        var buildUrl = "https://cdn.jsdelivr.net/gh/gru6nny/ohd@main/Build";
-        var loaderUrl = buildUrl + "/Granny.loader.js";
-
-        async function initializeGame() {
-            try {
-                const dataBuffer = await mergeUnityWebFiles(buildUrl, "Granny", 2, "data");
-                const wasmBuffer = await mergeUnityWebFiles(buildUrl, "Granny", 2, "wasm");
-
-                const dataBlobUrl = URL.createObjectURL(new Blob([dataBuffer], { type: "application/octet-stream" }));
-                const wasmBlobUrl = URL.createObjectURL(new Blob([wasmBuffer], { type: "application/octet-stream" }));
-
-                var config = {
-                    dataUrl: dataBlobUrl,
-                    frameworkUrl: buildUrl + "/Granny.framework.js",
-                    codeUrl: wasmBlobUrl,
-                    streamingAssetsUrl: "https://cdn.jsdelivr.net/gh/gru6nny/ohd@main/StreamingAssets",
-                    companyName: "Anastasia Kazantseva",
-                    productName: "Granny",
-                    productVersion: "1.0",
-                    showBanner: unityShowBanner,
-                };
-
-                var script = document.createElement("script");
-                script.src = loaderUrl;
-                script.onload = () => {
-                    createUnityInstance(canvas, config, (progress) => {
-                        progressBarFull.style.width = 100 * progress + "%";
-                    }).then((unityInstance) => {
-                        myGameInstance = unityInstance;
-                        loadingBar.style.display = "none";
-                        // Oyun yüklendiğinde tıklama olayını ekle
-                        canvas.addEventListener('pointerdown', showAdOnClick);
-                        canvas.addEventListener('touchstart', showAdOnClick);
-                    }).catch((message) => {
-                        alert(message);
-                    });
-                };
-
-                document.body.appendChild(script);
-            } catch (error) {
-                console.error("Game initialization failed:", error);
-            }
-        }
-
-        initializeGame();
     </script>
 </body>
 </html>
