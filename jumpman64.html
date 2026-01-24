@@ -636,10 +636,10 @@
         </a>
 
         <!-- Export / Import -->
-        <button class="icon-btn" onclick="exportData()" title="Export Data" aria-label="Export Data">
+        <button class="icon-btn" onclick="exportData()" title="Export Data, bookmarks and history" aria-label="Export Data">
             <i class="fas fa-download" aria-hidden="true"></i>
         </button>
-        <button class="icon-btn" onclick="document.getElementById('import-file').click()" title="Import Data" aria-label="Import Data">
+        <button class="icon-btn" onclick="document.getElementById('import-file').click()" title="Import Data, bookmarks and history" aria-label="Import Data">
             <i class="fas fa-upload" aria-hidden="true"></i>
         </button>
         <input id="import-file" type="file" accept="application/json" style="display:none" onchange="handleImportFile(event)" />
@@ -654,7 +654,7 @@
                 </div>
 
                 <div class="combined-center" aria-hidden="false">
-                    <div class="title-pill" id="title-pill">Jumpman64 Web view v1.5</div>
+                    <div class="title-pill" id="title-pill">Jumpman64 Web view v2.0</div>
                 </div>
 
                 <div class="combined-right" aria-hidden="false">
@@ -676,7 +676,7 @@
 
             <!-- offline detection pill -->
             <div class="info-pill" id="offline-pill" style="display:none; background: rgba(255,80,80,0.06); border-color: rgba(255,80,80,0.18);">
-                You are offline — some features may be limited.
+                You appear to be offline; some features may be limited.
             </div>
         </div>
 
