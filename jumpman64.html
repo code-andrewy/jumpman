@@ -3,14 +3,33 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>Jumpman64 | Web view</title>
-    <link rel="icon" href="https://img.icons8.com/emoji/48/chicken-emoji.png" type="image/x-icon">
+
+    <link rel="icon" href="https://img.icons8.com/emoji/48/chicken-emoji.png" type="image/png">
+
+
+    <meta http-equiv="Content-Security-Policy" content="
+          default-src 'self';
+          script-src 'self' 'unsafe-inline';
+          style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
+          font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com;
+          img-src 'self' data: https: http:;
+          connect-src https:;
+          object-src 'none';
+          base-uri 'self';
+        ">
+
     <meta name="theme-color" content="#0b1020" />
 
-    <!-- Font & Icons -->
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- Icons (no integrity to avoid blocking) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
 
     <style>
         :root {
@@ -53,7 +72,7 @@
             font-family: 'Outfit', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
             color: var(--text-main);
             min-height: 100vh;
-            background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop');
+            background-image: url('https://raw.githubusercontent.com/code-andrewy/jumpman64beta/refs/heads/main/charlie-brown-snoopy-stargazing-desktop-wallpaper-preview.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -650,11 +669,11 @@
             <!-- Single combined pill containing greeting, title, time/date, and weather -->
             <div class="combined-pill" id="combined-pill" role="region" aria-label="Status">
                 <div class="combined-left" aria-hidden="false">
-                    <div class="greeting" id="greeting">WELCOME</div>
+                    <div class="greeting" id="greeting">Welcome</div>
                 </div>
 
                 <div class="combined-center" aria-hidden="false">
-                    <div class="title-pill" id="title-pill">Jumpman64 Web view v2.0</div>
+                    <div class="title-pill" id="title-pill">Jumpman64 Web view v2.5</div>
                 </div>
 
                 <div class="combined-right" aria-hidden="false">
@@ -672,7 +691,6 @@
             <!-- new pill: random line from verynice.txt -->
             <div class="info-pill" id="verynice" style="background: rgba(0,255,255,0.04); border-color: rgba(0,255,255,0.08);">Loading surprise...</div>
 
-            <div class="info-pill" id="yourmom" style="background: rgba(255,165,0,0.06); border-color: rgba(255,165,0,0.18);">⚠️ Please note that we don’t track you, but all of your internet traffic goes directly to IT. So please don’t visit non school appropriate sites. </div>
 
             <!-- offline detection pill -->
             <div class="info-pill" id="offline-pill" style="display:none; background: rgba(255,80,80,0.06); border-color: rgba(255,80,80,0.18);">
@@ -761,7 +779,7 @@
     </div>
 
     <script>
-        /* combined-pill version — keeps previous functionality but shows greeting/title/clock/weather all in one pill.
+        /* combined-pill version — safer and patched.
    Timezone is forced to America/New_York for display.
 */
 
@@ -778,8 +796,13 @@
         const WEATHER_CACHE_KEY = 'jumpman_weather_cache';
         const WEATHER_CACHE_TTL = 1000 * 60 * 15; // 15 minutes
 
+        // Limits
+        const MAX_BOOKMARKS = 200;
+        const MAX_HTML_SAVE_BYTES = 200000; // ~200KB
+
         let currentEngine = 'google';
 
+        /* ---------- Utilities ---------- */
         function safeJSONParse(s, fallback) {
             try {
                 if (typeof s !== 'string') return fallback;
@@ -790,6 +813,7 @@
             }
         }
 
+        // return a base64 key that is safe for localStorage keys
         function keyFromUrl(url) {
             try {
                 const enc = typeof url === 'string' ? unescape(encodeURIComponent(url)) : String(url);
@@ -807,12 +831,11 @@
             }
         }
 
-        /* URL sanitation helpers — only allow http/https */
+        /* URL sanitation helpers */
         function sanitizeUrl(input) {
             if (!input || typeof input !== 'string') return null;
             const trimmed = input.trim();
             try {
-                // try as-is first
                 const u = new URL(trimmed);
                 if (u.protocol === 'http:' || u.protocol === 'https:') return u.href;
                 return null;
@@ -826,14 +849,28 @@
             return null;
         }
 
-        /* Init */
+        // stricter: only allow https (useful for background images)
+        function sanitizeUrlHttpsOnly(input) {
+            const h = sanitizeUrl(input);
+            if (!h) return null;
+            try {
+                const u = new URL(h);
+                if (u.protocol === 'https:') return u.href;
+            } catch {}
+            return null;
+        }
+
+        /* ---------- Init ---------- */
         window.addEventListener('DOMContentLoaded', () => {
             loadPreferences();
             updateTime();
             setInterval(updateTime, 1000);
             fetchWeather();
-            fetchFunFact();
-            fetchRandomLine();
+            // non-critical tasks can run slightly later to speed initial paint
+            setTimeout(() => {
+                fetchFunFact();
+                fetchRandomLine();
+            }, 500);
             loadBookmarks();
             renderHistory();
             bindUIShortcuts();
@@ -844,7 +881,7 @@
             renderHistory();
         });
 
-        /* Engine UI */
+        /* ---------- Engine UI ---------- */
         function toggleEngineMenu() {
             const menu = document.getElementById('engine-menu');
             const sel = document.getElementById('selected-engine');
@@ -859,8 +896,12 @@
             currentEngine = name || 'google';
             const icon = document.getElementById('current-engine-icon');
             if (icon && iconUrl) {
-                icon.src = iconUrl;
-                icon.alt = name;
+                // sanitize icon url (must be http(s))
+                const s = sanitizeUrl(iconUrl);
+                if (s) {
+                    icon.src = s;
+                    icon.alt = name;
+                }
             }
             document.getElementById('engine-menu')?.classList.remove('active');
             document.getElementById('selected-engine')?.setAttribute('aria-expanded', 'false');
@@ -868,7 +909,7 @@
             savePref('engine', currentEngine);
         }
 
-        /* Keyboard & outside click handling */
+        /* ---------- Keyboard & outside click handling ---------- */
         function bindUIShortcuts() {
             document.addEventListener('click', (e) => {
                 const engineWrapper = document.getElementById('engine-wrapper');
@@ -922,7 +963,7 @@
             }
         }
 
-        /* Fetch helpers: fetch with timeout + public proxy fallback */
+        /* ---------- Fetch helpers: timeout + safe proxy fallback ---------- */
         async function fetchWithTimeout(url, timeoutMs = 2500) {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -944,18 +985,23 @@
             try {
                 return await fetchWithTimeout(url, timeoutMs);
             } catch (err) {
-                // fallback to AllOrigins
-                const proxy = 'https://api.allorigins.win/raw?url=';
-                return await fetchWithTimeout(proxy + encodeURIComponent(url), timeoutMs);
+                // fallback to AllOrigins — but swallow failures and return null if proxy fails
+                try {
+                    const proxy = 'https://api.allorigins.win/raw?url=';
+                    return await fetchWithTimeout(proxy + encodeURIComponent(url), timeoutMs);
+                } catch {
+                    console.warn('Both primary and proxy fetch failed for', url, err);
+                    return null;
+                }
             }
         }
 
-        /* Save HTML to localStorage and write small cookie referencing the key */
+        /* ---------- Save HTML to localStorage (with size guard) ---------- */
         function saveHtmlToStorage(url, html) {
             try {
                 if (!html || typeof html !== 'string') return null;
                 // avoid very large saves which can cause quota errors
-                if (html.length > 200000) { // ~200KB
+                if (html.length > MAX_HTML_SAVE_BYTES) {
                     console.warn('Skipping saveHtmlToStorage: html too large (' + html.length + ' bytes)');
                     return null;
                 }
@@ -972,7 +1018,7 @@
             }
         }
 
-        /* Main Go handler — no prefetch on navigation */
+        /* ---------- Main Go handler — safe navigation ---------- */
         async function onGoClick() {
             const input = document.getElementById('url');
             if (!input) return;
@@ -1010,7 +1056,7 @@
             }
         }
 
-        /* Suggestions (Wikipedia) */
+        /* ---------- Suggestions (Wikipedia) ---------- */
         (function bindSearchSuggestions() {
             const searchInput = document.getElementById('url');
             const suggestions = document.getElementById('suggestions');
@@ -1035,7 +1081,7 @@
                         suggestions.classList.add('active');
                         data[1].forEach(title => {
                             const li = document.createElement('li');
-                            li.textContent = title;
+                            li.textContent = title; // safe insertion
                             li.tabIndex = 0;
                             li.setAttribute('role', 'option');
                             li.onclick = () => {
@@ -1065,7 +1111,7 @@
             });
         })();
 
-        /* Preferences & theme */
+        /* ---------- Preferences & theme ---------- */
         function loadPreferences() {
             const prefs = safeJSONParse(localStorage.getItem(PREF_KEY), {
                 theme: 'dark',
@@ -1073,7 +1119,12 @@
                 engine: 'google'
             });
             document.body.setAttribute('data-theme', prefs.theme || 'dark');
-            if (prefs.bg) document.body.style.backgroundImage = `url('${prefs.bg}')`;
+            if (prefs.bg) {
+                // strict HTTPS for background images
+                const bg = sanitizeUrlHttpsOnly(prefs.bg);
+                if (bg) document.body.style.backgroundImage = `url('${bg}')`;
+                else document.body.style.backgroundImage = '';
+            }
             if (prefs.engine) {
                 currentEngine = prefs.engine;
                 const iconMap = {
@@ -1123,8 +1174,13 @@
             if (!input) return;
             const url = input.value.trim();
             if (url) {
-                document.body.style.backgroundImage = `url('${url}')`;
-                savePref('bg', url);
+                const secure = sanitizeUrlHttpsOnly(url);
+                if (!secure) {
+                    alert('Please enter a valid HTTPS image URL for the background.');
+                    return;
+                }
+                document.body.style.backgroundImage = `url('${secure}')`;
+                savePref('bg', secure);
                 closeBgSettings();
             }
         }
@@ -1135,7 +1191,7 @@
             closeBgSettings();
         }
 
-        /* Time / weather / fun fact */
+        /* ---------- Time / weather / fun fact ---------- */
         function updateTime() {
             const now = new Date();
             const clock = document.getElementById('clock');
@@ -1184,7 +1240,7 @@
             }
         }
 
-        /* Weather with caching to avoid rate-limit / repeated calls */
+        /* ---------- Weather with caching (safe DOM insertion) ---------- */
         async function fetchWeather() {
             const out = document.getElementById('weather');
             if (!out) return;
@@ -1195,9 +1251,12 @@
                 if (rawCache) {
                     try {
                         const c = JSON.parse(rawCache);
-                        if (c?.ts && (Date.now() - c.ts) < WEATHER_CACHE_TTL && c?.displayText) {
-                            out.innerHTML = c.displayText;
-                            // return early to avoid extra network calls
+                        if (c?.ts && (Date.now() - c.ts) < WEATHER_CACHE_TTL && c?.displayTextSafe) {
+                            // displayTextSafe contains plain text and unit in a small object
+                            out.innerHTML = ''; // clear
+                            const span = document.createElement('span');
+                            span.textContent = c.displayTextSafe;
+                            out.appendChild(span);
                             return;
                         }
                     } catch {}
@@ -1215,13 +1274,26 @@
                 const cur = fData?.properties?.periods?.[0];
                 if (!cur) throw new Error('no period data');
 
-                const display = `Alton, NH: <b>${cur.temperature}°${cur.temperatureUnit}</b> ┃ ${cur.shortForecast}`;
-                out.innerHTML = display;
+                // Build safe DOM output (no innerHTML with untrusted data)
+                out.innerHTML = '';
+                const locationText = document.createElement('span');
+                locationText.textContent = 'Alton, NH: ';
+                const tempBold = document.createElement('b');
+                tempBold.textContent = `${cur.temperature}°${cur.temperatureUnit}`;
+                const sep = document.createTextNode(' ┃ ');
+                const short = document.createElement('span');
+                short.textContent = cur.shortForecast || '';
 
+                out.appendChild(locationText);
+                out.appendChild(tempBold);
+                out.appendChild(sep);
+                out.appendChild(short);
+
+                // cache a safe string representation
                 try {
                     localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({
                         ts: Date.now(),
-                        displayText: display
+                        displayTextSafe: `Alton, NH: ${cur.temperature}°${cur.temperatureUnit} ┃ ${cur.shortForecast || ''}`
                     }));
                 } catch {}
             } catch (err) {
@@ -1231,8 +1303,11 @@
                     const rawCache = localStorage.getItem(WEATHER_CACHE_KEY);
                     if (rawCache) {
                         const c = JSON.parse(rawCache);
-                        if (c?.displayText) {
-                            out.innerHTML = c.displayText + ' (cached)';
+                        if (c?.displayTextSafe) {
+                            out.innerHTML = '';
+                            const span = document.createElement('span');
+                            span.textContent = c.displayTextSafe + ' (cached)';
+                            out.appendChild(span);
                             return;
                         }
                     }
@@ -1241,14 +1316,22 @@
             }
         }
 
-        /* Bookmarks & History */
+        /* ---------- Bookmarks & History ---------- */
         function getFavicon(url) {
             try {
+                // prefer domain only; google service may return 404 for some sites — caller should attach onerror fallback
                 return `https://www.google.com/s2/favicons?sz=64&domain=${new URL(url).hostname}`;
             } catch {
                 return '';
             }
         }
+
+        // simple SVG placeholder data URI (used when favicon 404s)
+        const FALLBACK_FAVICON = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+     <rect width="100%" height="100%" fill="#dde"/>
+     <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="28" fill="#667">J</text>
+   </svg>`);
 
         function defaultBookmarks() {
             return [{
@@ -1291,7 +1374,6 @@
                     name: "GitHub",
                     url: "https://github.com/"
                 },
-                // added bookmarks:
                 {
                     name: "Khan Academy",
                     url: "https://www.khanacademy.org/"
@@ -1369,7 +1451,12 @@
 
                 const img = document.createElement('img');
                 const safeUrlForFav = sanitizeUrl(bm.url);
-                img.src = safeUrlForFav ? (getFavicon(safeUrlForFav) || '') : '';
+                img.src = safeUrlForFav ? (getFavicon(safeUrlForFav) || FALLBACK_FAVICON) : FALLBACK_FAVICON;
+                // fallback on error to avoid broken icon tries (prevents console spam)
+                img.onerror = () => {
+                    img.onerror = null;
+                    img.src = FALLBACK_FAVICON;
+                };
                 img.className = 'nav-icon';
                 img.alt = bm.name || '';
 
@@ -1419,13 +1506,29 @@
 
             let bms = safeJSONParse(localStorage.getItem(STORAGE_KEY), []);
             if (!Array.isArray(bms)) bms = [];
-            // add new bookmarks to the front so they're easy to access
-            bms.unshift({
+
+            // dedupe by normalized URL (keep most recent)
+            const map = new Map();
+            map.set(sanitized, {
                 name,
                 url: sanitized
             });
+            bms.forEach(b => {
+                const s = sanitizeUrl(b.url) || b.url;
+                if (!map.has(s)) map.set(s, {
+                    name: b.name,
+                    url: s
+                });
+            });
+            // add new at front
+            const merged = [{
+                name,
+                url: sanitized
+            }, ...Array.from(map.values()).filter(m => m.url !== sanitized)];
+            // enforce max
+            const final = merged.slice(0, MAX_BOOKMARKS);
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(bms));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(final));
             } catch {}
 
             loadBookmarks();
@@ -1482,7 +1585,6 @@
             if (!input) return;
             const raw = input.value.trim();
             if (!raw) {
-                // populate with empty values but open form
                 openAddBookmark('', '');
                 return;
             }
@@ -1492,6 +1594,7 @@
             openAddBookmark(name, url);
         }
 
+        /* ---------- Show saved HTML ---------- */
         function showStoredHtmlForUrl(url, title) {
             const key = keyFromUrl(url);
             const html = localStorage.getItem(key);
@@ -1505,10 +1608,11 @@
             htitle.textContent = `Saved HTML — ${title || url}`;
             if (html) {
                 info.textContent = `Loaded from localStorage (${(html.length||0).toLocaleString()} bytes). Displayed as plain text (safe).`;
-                pre.textContent = html;
+                pre.textContent = html; // textContent keeps it safe
                 if (openLink) {
                     openLink.style.display = 'inline-block';
                     openLink.href = url;
+                    openLink.rel = 'noopener noreferrer';
                 }
             } else {
                 info.textContent = 'No saved HTML for that URL.';
@@ -1537,6 +1641,7 @@
             navigator.clipboard?.writeText(text).then(() => alert('HTML copied to clipboard'), () => alert('Copy failed'));
         }
 
+        /* ---------- History ---------- */
         function saveHistory(url, title, htmlKey = null) {
             if (!url) return;
             const sanitized = sanitizeUrl(url) || url; // history may include search URLs (still store)
@@ -1569,7 +1674,6 @@
             if (!container || !section) return;
             const history = safeJSONParse(localStorage.getItem(HISTORY_KEY), []);
             if (!history || history.length === 0) {
-                // hide the whole history section if there's nothing
                 section.style.display = 'none';
                 container.innerHTML = '';
                 return;
@@ -1586,13 +1690,19 @@
                 a.className = 'history-item';
                 a.href = sanitized;
                 a.target = '_self';
-                a.rel = 'noopener noreferrer';
+                a.rel = 'noopener noreferrer nofollow';
                 a.title = entry.title;
 
                 const img = document.createElement('img');
-                img.src = getFavicon(sanitized) || '';
+                img.src = getFavicon(sanitized) || FALLBACK_FAVICON;
                 img.className = 'nav-icon';
                 img.alt = '';
+
+                // fallback on icon error
+                img.onerror = () => {
+                    img.onerror = null;
+                    img.src = FALLBACK_FAVICON;
+                };
 
                 const labelText = (entry.title || getHostnameLabel(sanitized));
                 const truncated = labelText.length > 30 ? (labelText.slice(0, 28) + '...') : labelText;
@@ -1618,7 +1728,7 @@
             renderHistory();
         }
 
-        /* Fetch random line from your GitHub raw file */
+        /* ---------- Fetch random line ---------- */
         async function fetchRandomLine() {
             const out = document.getElementById('verynice');
             const url = 'https://raw.githubusercontent.com/code-andrewy/jumpman64beta/refs/heads/main/verynice.txt';
@@ -1639,9 +1749,7 @@
             }
         }
 
-        /* ----------------------
-           Offline detection UI
-           ---------------------- */
+        /* ---------- Offline detection UI ---------- */
         function updateOfflineUI() {
             const pill = document.getElementById('offline-pill');
             if (!pill) return;
@@ -1651,14 +1759,10 @@
                 pill.style.display = 'none';
             }
         }
-        // bind events
         window.addEventListener('online', updateOfflineUI);
         window.addEventListener('offline', updateOfflineUI);
 
-        /* ----------------------
-           Export / Import data
-           ---------------------- */
-
+        /* ---------- Export / Import data ---------- */
         function exportData() {
             try {
                 const payload = {
@@ -1667,7 +1771,6 @@
                     prefs: safeJSONParse(localStorage.getItem(PREF_KEY), {}),
                     history: safeJSONParse(localStorage.getItem(HISTORY_KEY), []),
                     weatherCache: safeJSONParse(localStorage.getItem(WEATHER_CACHE_KEY), null),
-                    // NOTE: saved HTML (localStorage keys prefixed by HTML_PREFIX) might be large; include optionally
                 };
                 const blob = new Blob([JSON.stringify(payload, null, 2)], {
                     type: 'application/json'
@@ -1697,7 +1800,6 @@
                 } catch (err) {
                     alert('Invalid JSON file.');
                 } finally {
-                    // clear the input to allow same file re-import later
                     e.target.value = '';
                 }
             };
@@ -1709,20 +1811,18 @@
                 alert('Invalid import object');
                 return;
             }
-            // Simple validation
             const ok = 'bookmarks' in obj || 'prefs' in obj || 'history' in obj;
             if (!ok) {
                 alert('File does not appear to be a Jumpman export.');
                 return;
             }
 
-            // Ask user whether to merge or replace bookmarks (simple confirm)
             try {
                 // Bookmarks
                 if (Array.isArray(obj.bookmarks)) {
                     const existing = safeJSONParse(localStorage.getItem(STORAGE_KEY), []);
                     if (existing.length && confirm('Replace existing bookmarks? OK = replace, Cancel = merge')) {
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(obj.bookmarks));
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(obj.bookmarks.slice(0, MAX_BOOKMARKS)));
                     } else {
                         // merge: keep existing then add any new (by URL)
                         const map = new Map();
@@ -1733,7 +1833,7 @@
                                 url: s
                             });
                         });
-                        const merged = Array.from(map.values());
+                        const merged = Array.from(map.values()).slice(0, MAX_BOOKMARKS);
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
                     }
                 }
@@ -1745,12 +1845,10 @@
 
                 // History
                 if (Array.isArray(obj.history)) {
-                    // Ask whether to replace or merge
                     const existingHist = safeJSONParse(localStorage.getItem(HISTORY_KEY), []);
                     if (existingHist.length && confirm('Replace existing history? OK = replace, Cancel = merge')) {
                         localStorage.setItem(HISTORY_KEY, JSON.stringify(obj.history.slice(0, 50)));
                     } else {
-                        // merge and dedupe by url
                         const map = new Map();
                         existingHist.concat(obj.history).forEach(h => {
                             const s = sanitizeUrl(h.url) || h.url;
@@ -1769,7 +1867,7 @@
                     localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(obj.weatherCache));
                 }
 
-                // reload UI state
+                // reload UI
                 loadPreferences();
                 loadBookmarks();
                 renderHistory();
@@ -1782,7 +1880,7 @@
             }
         }
 
-        /* Expose functions used by inline handlers */
+        /* ---------- Expose functions for inline handlers ---------- */
         window.toggleEngineMenu = toggleEngineMenu;
         window.setEngine = setEngine;
         window.onGoClick = onGoClick;
@@ -1800,13 +1898,12 @@
         window.showStoredHtmlForUrl = showStoredHtmlForUrl;
         window.closeHtmlModal = closeHtmlModal;
         window.copyHtml = copyHtml;
-
-        // Export/Import & offline UI exposure
         window.exportData = exportData;
         window.handleImportFile = handleImportFile;
         window.importData = importData;
         window.updateOfflineUI = updateOfflineUI;
     </script>
+
 
 </body>
 
